@@ -1,23 +1,34 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useTenantStore } from '../../../store/useTenantStore';
-import { MessagingService } from '../../../services/messagingService';
+import { MessagingService } from '../services/messagingService';
 import { Badge, Avatar } from '../../../shared/components/ui';
 import {
   MessageSquare,
   Phone,
   Mail,
-  Instagram,
-  Facebook,
   Send,
   Search,
-  User,
   ShoppingCart,
   Wallet,
   FileText,
   Loader2
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
+
+const FacebookIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+);
 
 interface Interaction {
   id: string;
@@ -260,8 +271,8 @@ export const OmnichannelInbox = () => {
     switch (channel) {
       case 'whatsapp': return <Phone className="w-3 h-3 text-emerald-400" />;
       case 'email': return <Mail className="w-3 h-3 text-blue-400" />;
-      case 'instagram': return <Instagram className="w-3 h-3 text-pink-400" />;
-      case 'facebook': return <Facebook className="w-3 h-3 text-blue-600" />;
+      case 'instagram': return <InstagramIcon className="w-3 h-3 text-pink-400" />;
+      case 'facebook': return <FacebookIcon className="w-3 h-3 text-blue-600" />;
       default: return <MessageSquare className="w-3 h-3 text-slate-400" />;
     }
   };
@@ -364,7 +375,7 @@ export const OmnichannelInbox = () => {
                   <p className="text-xs uppercase font-black">No hay mensajes en esta conversación</p>
                 </div>
               ) : (
-                messages.map((m, idx) => (
+                messages.map((m) => (
                   <div
                     key={m.id}
                     className={`flex ${m.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}

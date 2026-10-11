@@ -99,6 +99,8 @@ export const useTreasuryStore = create<TreasuryState>((set, get) => ({
   },
 }));
 
-useTenantStore.subscribe((state) => {
-  useTreasuryStore.setState({ transactions: [] });
+useTenantStore.subscribe((state, prev) => {
+  if (state.activeCompanyId !== prev.activeCompanyId) {
+    useTreasuryStore.setState({ transactions: [] });
+  }
 });

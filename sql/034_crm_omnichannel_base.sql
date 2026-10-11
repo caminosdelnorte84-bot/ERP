@@ -17,9 +17,12 @@ CREATE TABLE IF NOT EXISTS customer_interactions (
   channel text NOT NULL CHECK (channel IN ('whatsapp', 'email', 'instagram', 'facebook', 'manual')),
   direction text NOT NULL CHECK (direction IN ('inbound', 'outbound')),
   content text NOT NULL,
+  read boolean DEFAULT false,
   metadata jsonb, -- Para guardar IDs de mensaje, adjuntos, etc.
   created_at timestamptz DEFAULT now()
 );
+
+ALTER TABLE customer_interactions ADD COLUMN IF NOT EXISTS read boolean DEFAULT false;
 
 -- 3. Aislamiento Multi-tenant (RLS)
 ALTER TABLE customer_interactions ENABLE ROW LEVEL SECURITY;

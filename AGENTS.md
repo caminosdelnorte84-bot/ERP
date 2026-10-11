@@ -143,6 +143,18 @@ Mantener las últimas ~10 entradas y podar las viejas.
 
 ### Historial reciente
 
+- **2026-10 fix build Cloudflare CI (gate tsc en OmnichannelInbox + useTreasuryStore)** —
+  La compilación de CI fallaba en `tsc --noEmit` por 10 errores de tipado introducidos en el
+  módulo CRM omnicanal y tesorería: (1) `OmnichannelInbox.tsx`: import relativo roto hacia
+  `messagingService` (`../../../` corregido a `../`), `Instagram` y `Facebook` inexistentes
+  en `lucide-react` (reemplazados por componentes SVG integrados con sus clases), `User` e
+  `idx` no utilizados removidos; (2) `customer_interactions`: la tabla en `034_crm_omnichannel_base.sql`
+  y `database.types.ts` carecían de la columna `read` (agregada en SQL y en los tipos TypeScript
+  como booleano); (3) `useTreasuryStore.ts`: el listener de `useTenantStore.subscribe` tenía
+  el parámetro `state` sin usar (actualizado al patrón estándar `(state, prev) => { if (state.activeCompanyId !== prev.activeCompanyId) ... }`).
+  Verificación: `tsc --noEmit -p tsconfig.app.json` limpio (0 errores) y `npm run build`
+  completado exitosamente tanto para el worker como para el bundle de cliente.
+
 - **2026-08 push a main del worktree completo (commit `7d59997`)** — Se subió a
   `origin/main` todo el trabajo acumulado: reconciliación anidado→padre, gate tsc en build,
   applyRounding único, CSV/BOM, migraciones 031/032/033 aplicadas a prod, filamentos (costo

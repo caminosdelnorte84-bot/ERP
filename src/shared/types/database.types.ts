@@ -506,6 +506,7 @@ export type Database = {
           channel: string
           direction: string
           content: string
+          read: boolean
           metadata: Json | null
           created_at: string | null
         }
@@ -516,6 +517,7 @@ export type Database = {
           channel: string
           direction: string
           content: string
+          read?: boolean
           metadata?: Json | null
           created_at?: string | null
         }
@@ -526,6 +528,7 @@ export type Database = {
           channel?: string
           direction?: string
           content?: string
+          read?: boolean
           metadata?: Json | null
           created_at?: string | null
         }
