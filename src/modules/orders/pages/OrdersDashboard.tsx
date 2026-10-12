@@ -371,7 +371,7 @@ await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(
 
         <div className="flex gap-1 mt-3 overflow-x-auto pb-1">
           {(['ALL', 'PENDING', 'PARTIAL', 'DELIVERED', 'CANCELLED'] as StatusFilter[]).map((status) => {
-            const config = status === 'ALL' ? null : STATUS_CONFIG[status];
+            const config = (STATUS_CONFIG as any)[status] || null;
             const Icon = config?.icon || Package;
             const count = status === 'ALL' ? orders.length : orders.filter((o) => o.status === status).length;
             return (

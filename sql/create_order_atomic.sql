@@ -1,9 +1,12 @@
 -- Función atómica para crear un pedido y descontar el stock simultáneamente.
 -- Se ejecuta dentro de una sola transacción, si algo falla, se revierte todo.
+-- Corrección: Se añade SECURITY DEFINER y SET search_path para seguridad RLS, y COALESCE en stock para integridad.
 
 CREATE OR REPLACE FUNCTION create_order_atomic(order_payload JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_new_order_id UUID;
@@ -13,7 +16,7 @@ DECLARE
 BEGIN
   -- 1. Insertamos el pedido mapeando los campos del JSON a la tabla orders
   INSERT INTO orders (
-    customer_name, total_amount, advance_payment, 
+    customer_name, total_amount, advance_payment,
     status, due_date, business_unit, items, company_id
   )
   VALUES (
@@ -31,10 +34,11 @@ BEGIN
   -- 2. Recorremos los ítems del JSON y descontamos el stock atómicamente
   FOR v_item IN SELECT * FROM jsonb_array_elements(order_payload->'items') LOOP
     v_product_id := COALESCE(v_item->>'productId', v_item->>'id')::UUID;
-    
+
     FOR v_variant IN SELECT * FROM jsonb_array_elements(v_item->'variations') LOOP
       UPDATE product_variants
-      SET stock_quantity = stock_quantity - (v_variant->>'quantity')::INT
+      -- COALESCE asegura que tratamos NULL como 0 antes de restar
+      SET stock_quantity = COALESCE(stock_quantity, 0) - (v_variant->>'quantity')::INT
       WHERE product_id = v_product_id
         AND size_id = (v_variant->>'sizeId')::UUID
         AND color_id = (v_variant->>'colorId')::UUID;

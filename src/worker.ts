@@ -9,7 +9,7 @@ export interface Env {
 }
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://erp.caminosdelnorte84.workers.dev',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
@@ -552,6 +552,38 @@ async function postJsonWithTimeout(
   }
 }
 
+// --- FUNCIONES AUXILIARES DE SEGURIDAD PARA WHATSAPP ---
+const hexToBytes = (hex: string): Uint8Array => {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+};
+
+const verifyWhatsappSignature = async (
+  payload: string,
+  signature: string,
+  secret: string
+): Promise<boolean> => {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+
+  const sigBytes = hexToBytes(signature.replace('sha256=', ''));
+  return await crypto.subtle.verify(
+    'HMAC',
+    key,
+    sigBytes,
+    encoder.encode(payload)
+  );
+};
+
 async function handleWhatsappWebhook(request: Request, env: Env): Promise<Response> {
   if (request.method === 'GET') {
     const url = new URL(request.url);
@@ -566,8 +598,16 @@ async function handleWhatsappWebhook(request: Request, env: Env): Promise<Respon
   }
 
   if (request.method === 'POST') {
+    // Verificación de firma
+    const signature = request.headers.get('X-Hub-Signature-256');
+    if (!signature) return new Response('Forbidden: No signature', { status: 403 });
+
+    const bodyText = await request.text();
+    const isValid = await verifyWhatsappSignature(bodyText, signature, env.WHATSAPP_VERIFY_TOKEN);
+    if (!isValid) return new Response('Forbidden: Invalid signature', { status: 403 });
+
     try {
-      const body = await request.json();
+      const body = JSON.parse(bodyText);
       const entry = body.entry?.[0];
       const change = entry?.changes?.[0];
       const value = change?.value;
