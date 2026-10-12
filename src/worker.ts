@@ -579,7 +579,7 @@ const verifyWhatsappSignature = async (
   return await crypto.subtle.verify(
     'HMAC',
     key,
-    sigBytes,
+    sigBytes as unknown as BufferSource,
     encoder.encode(payload)
   );
 };
