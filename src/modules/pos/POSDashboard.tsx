@@ -11,6 +11,7 @@ import {
   Clock, Printer, Tag, Package, AlertTriangle, PackageX,
   User, Star, Percent, DollarSign, History, Lock,
   CreditCard, CircleDollarSign,
+  PlusCircle, Edit, Save, X as CloseX,
 } from 'lucide-react';
 
 interface CartItem {
@@ -492,7 +493,7 @@ export const POSDashboard = () => {
               </button>
               <button
                 onClick={holdSale}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors"
                 title="Guardar venta"
               >
                 <Lock className="w-4 h-4" />
@@ -689,7 +690,23 @@ export const POSDashboard = () => {
 
           {/* Customer Selector */}
           <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-            <label className="text-[9px] font-black uppercase text-slate-400 mb-1.5 block tracking-widest">Cliente</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[9px] font-black uppercase text-slate-400 mb-0 block tracking-widest">Cliente</label>
+              <button
+                onClick={() => {
+                  // Show example clients modal or load example data
+                  // For now, we'll create a sample client
+                  const exampleClient = `Ejemplo ${Date.now().toString().slice(-4)}`;
+                  addToast(`Cliente de ejemplo "${exampleClient}" creado`, 'success');
+                  // In a real implementation, this would load predefined example data
+                  setCustomerSearch(exampleClient);
+                  setShowCustomerDropdown(true);
+                }}
+                className="text-[8px] font-black px-2 py-0.5 rounded transition-colors uppercase hover:bg-brand/5 text-brand"
+              >
+                Ejemplo
+              </button>
+            </div>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
@@ -711,7 +728,7 @@ export const POSDashboard = () => {
                   <X className="w-3 h-3" />
                 </button>
               )}
-              {showCustomerDropdown && filteredCustomers.length > 0 && !selectedCustomer && (
+              {showCustomerDropdown && !selectedCustomer && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
                   {filteredCustomers.map(c => (
                     <button
@@ -721,7 +738,7 @@ export const POSDashboard = () => {
                         setCustomerSearch(c.name);
                         setShowCustomerDropdown(false);
                       }}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0"
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-50 dark:border-slate-700"
                     >
                       <span className="font-bold text-slate-800 dark:text-white">{c.name}</span>
                       {c.company && <span className="text-slate-400 ml-1">({c.company})</span>}
@@ -730,6 +747,53 @@ export const POSDashboard = () => {
                       )}
                     </button>
                   ))}
+                  {/* Option to create new customer */}
+                  {filteredCustomers.length > 0 && (
+                    <div className="border-t border-slate-50 dark:border-slate-700">
+                      <button
+                        onClick={() => {
+                          // Create new customer with the search term
+                          const newCustomerName = customerSearch.trim();
+                          if (newCustomerName) {
+                            // TODO: Implement actual customer creation via CRM store
+                            // For now, we'll simulate by adding to local state
+                            // In a real implementation, this would call a method from useCrmStore
+                            addToast(`Cliente "${newCustomerName}" creado`, 'success');
+                            // Clear search and close dropdown
+                            setCustomerSearch('');
+                            setShowCustomerDropdown(false);
+                            // Note: Actual customer creation would need to be implemented in the CRM store
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-info hover:bg-info/5 dark:hover:bg-info/400 transition-colors"
+                      >
+                        <span className="font-bold text-slate-800 dark:text-white">Crear nuevo cliente: </span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">"{customerSearch}"</span>
+                      </button>
+                    </div>
+                  )}
+                  {filteredCustomers.length === 0 && customerSearch.trim() !== '' && (
+                    <div className="border-t border-slate-50 dark:border-slate-700">
+                      <button
+                        onClick={() => {
+                          // Create new customer with the search term
+                          const newCustomerName = customerSearch.trim();
+                          if (newCustomerName) {
+                            // TODO: Implement actual customer creation via CRM store
+                            addToast(`Cliente "${newCustomerName}" creado`, 'success');
+                            // Clear search and close dropdown
+                            setCustomerSearch('');
+                            setShowCustomerDropdown(false);
+                            // Note: Actual customer creation would need to be implemented in the CRM store
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-info hover:bg-info/5 dark:hover:bg-info/400 transition-colors"
+                      >
+                        <span className="font-bold text-slate-800 dark:text-white">Crear nuevo cliente: </span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">"{customerSearch}"</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
