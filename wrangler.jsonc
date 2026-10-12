@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "eprservintegrales",
   "main": "src/worker.ts",
+  "format": "modules",
   "build": {
     "command": "npm run build"
   },

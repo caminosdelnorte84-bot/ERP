@@ -716,6 +716,16 @@ export default {
       return handleWhatsappWebhook(request, env);
     }
 
+    if (url.pathname === '/api/test-supabase') {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/companies?limit=1`, {
+        headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}` }
+      });
+      const data = await res.json();
+      return new Response(JSON.stringify({ status: res.status, data }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (url.pathname === '/api/gemini' && request.method === 'POST') {
       const authHeader = request.headers.get('Authorization');
       const authenticated = await verifySupabaseJWT(authHeader, env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
