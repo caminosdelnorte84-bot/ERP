@@ -72,10 +72,13 @@ export const usePrintModelStore = create<PrintModelState>((set, get) => ({
   },
 
   updateModel: async (id, data) => {
+    const companyId = useTenantStore.getState().activeCompanyId;
+    if (!companyId) throw new Error('No hay compañía activa.');
     const { data: row, error } = await supabase
       .from('print_models')
       .update(data)
       .eq('id', id)
+      .eq('company_id', companyId)
       .select()
       .single();
 
@@ -93,9 +96,9 @@ export const usePrintModelStore = create<PrintModelState>((set, get) => ({
   },
 
   deleteModel: async (id) => {
-    const { error } = await supabase.from('print_models').delete().eq('id', id);
+    // Confirmación + purga storage (patrón AGENTS.md auditoría 2026-08)
+    const { error } = await supabase.from('print_models').delete().eq('id', id).eq('company_id', useTenantStore.getState().activeCompanyId);
     if (error) throw error;
-
     set((state) => ({
       models: state.models.filter((m) => m.id !== id),
     }));
