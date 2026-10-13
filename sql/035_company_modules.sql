@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS company_modules (
 CREATE INDEX IF NOT EXISTS idx_company_modules_company_id ON company_modules(company_id);
 
 CREATE POLICY "auth_own_company_modules" ON company_modules
-  FOR ALL USING (company_id = user_company_id())
-  WITH CHECK (company_id = user_company_id());
+  FOR ALL USING (company_id = private.user_company_id())
+  WITH CHECK (company_id = private.user_company_id());
 -- Reparar: verificar user_company_id() y conceder EXECUTE (fix 024/025)
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'user_company_id') THEN

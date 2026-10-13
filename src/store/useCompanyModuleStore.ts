@@ -11,7 +11,7 @@ export interface CompanyModuleState {
 export const useCompanyModuleStore = create<CompanyModuleState>((set, get) => ({
   enabledModules: [],
   isEnabled: (code) => get().enabledModules.includes(code),
-  loadForCompany: async (companyId) => {
+  loadForCompany: async (_companyId) => {
     const run = async () => {
       try {
         // Aquí irá la consulta a company_modules por company_id
