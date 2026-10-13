@@ -1,0 +1,10 @@
+# Configuración de finales de línea para todo el repositorio ERP
+* text=auto
+*.ts text eol=lf
+*.tsx text eol=lf
+*.sql text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.env text eol=lf
+*.png binary
+*.jpg binary
