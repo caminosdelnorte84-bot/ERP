@@ -200,10 +200,11 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
           {activeTab === 'general' && (
             <>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                <label htmlFor="company-name" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
                   Razón Social *
                 </label>
                 <input
+                  id="company-name"
                   ref={nameRef}
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
@@ -213,10 +214,11 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                <label htmlFor="company-commercial" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
                   Nombre Comercial
                 </label>
                 <input
+                  id="company-commercial"
                   value={form.commercial_name}
                   onChange={(e) => update('commercial_name', e.target.value)}
                   className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -224,10 +226,11 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                <label htmlFor="company-notes" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
                   Notas Internas
                 </label>
                 <textarea
+                  id="company-notes"
                   value={form.notes}
                   onChange={(e) => update('notes', e.target.value)}
                   rows={3}
@@ -243,12 +246,13 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  <label htmlFor="company-tax" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
                     CUIT / ID Tributario
                   </label>
                   <div className="relative">
                     <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
+                      id="company-tax"
                       value={form.tax_id}
                       onChange={(e) => update('tax_id', e.target.value)}
                       className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono font-bold"
@@ -257,10 +261,11 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  <label htmlFor="company-iva" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
                     Condición ante IVA
                   </label>
                   <select
+                    id="company-iva"
                     value={form.fiscal_condition}
                     onChange={(e) => update('fiscal_condition', e.target.value)}
                     className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border dark:border-slate-700 dark:text-white font-bold"

@@ -491,3 +491,4 @@ Mantener las últimas ~10 entradas y podar las viejas.
 - .gitattributes creado (text=auto, *.ts LF); core.autocrlf=true (Windows).
 - Tests TDD: db-common.test.ts creado (AAA).
 - Pendiente CRÍTICO: rotar GEMINI_API_KEY y token Supabase sbp_... (expuesto en chat/agentes); quitar .env/.dev.vars del repo; verificar gate tsc tras npm ci.
+- **2026-10 cierre audit + a11y CompanyFormModal (opción C)** — a11y corregido (5 label htmlFor/id en CompanyFormModal 203-260). Subagentes a3d637c0 (estructura) y a419a2ec9 (enlaces) entregados: servicio 2026 vacío, rutas App.tsx OK. DB modular parcial verificado (db-*.ts + original presentes, monotipo 2957 líneas sin barrel). sql/035_company_modules.sql existe; .env removido (d3e3e7a). Pendiente: barrel, rotación clave, gate tsc, registro audit printrepo.
