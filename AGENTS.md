@@ -485,3 +485,9 @@ Mantener las últimas ~10 entradas y podar las viejas.
   puro `shared/utils/rateLimit.ts` para poder testearlo; worker importa de ahí.
 - **2026-08 `f4dac60`** — Modales Studio/Mockup lazy + vectorización en Web Worker con
   fallback main-thread (si Worker constructor falla o onerror dispara).
+## 2026-10 división database.types.ts + finales de línea
+- Plan ecc:planner ejecutado: A (db-common) → G (barrel). Archivos <800 líneas cada uno.
+- Commit 9249b6a: 10 archivos, sin .env/.dev.vars. Original preservado en database.types.original.ts.
+- .gitattributes creado (text=auto, *.ts LF); core.autocrlf=true (Windows).
+- Tests TDD: db-common.test.ts creado (AAA).
+- Pendiente CRÍTICO: rotar GEMINI_API_KEY y token Supabase sbp_... (expuesto en chat/agentes); quitar .env/.dev.vars del repo; verificar gate tsc tras npm ci.
