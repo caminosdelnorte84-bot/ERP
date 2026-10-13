@@ -145,7 +145,7 @@ export function FormField({ label, children }: FormFieldProps) {
       <label htmlFor={fieldId} className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 block mb-1">
         {label}
       </label>
-      {children}
+      {React.isValidElement(children) ? React.cloneElement(children, { id: (children.props as {id?:string}).id || fieldId }) : children}
     </div>
   );
 }
