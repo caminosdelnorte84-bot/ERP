@@ -143,6 +143,17 @@ Mantener las últimas ~10 entradas y podar las viejas.
 
 ### Historial reciente
 
+- **2026-10 repositorio de información estático (menú Info)** — Nueva página
+  `src/modules/info/pages/InfoResourcesPage.tsx`: recursos estáticos del negocio
+  (contactos, links, procedimientos, datos de referencia) en un único array
+  `SECCIONES` editable sin tocar JSX; ruta `/info` en App.tsx (lazy) y sección
+  "Info" al final del Sidebar (antes de Configuración, ícono BookOpen, highlight sky).
+  Sin BD. Verificación: tsc limpio, eslint solo el `any` preexistente de
+  Sidebar (CompanyFormModal), `/info` sirve 200 con HMR OK.
+  También en esta sesión: creado `.env` local con `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`
+  (sacadas de wrangler.jsonc) — sin él la app quedaba en blanco con
+  "Client infrastructure configuration missing" (el dev server no heredaba los bindings).
+
 - **2026-10 fix build Cloudflare CI (gate tsc en OmnichannelInbox + useTreasuryStore)** —
   La compilación de CI fallaba en `tsc --noEmit` por 10 errores de tipado introducidos en el
   módulo CRM omnicanal y tesorería: (1) `OmnichannelInbox.tsx`: import relativo roto hacia

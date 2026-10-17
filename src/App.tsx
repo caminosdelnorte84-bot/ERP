@@ -39,6 +39,7 @@ const MockupTemplatesPage = lazy(() => import("./modules/mockups/pages/MockupTem
 const StockEntry = lazy(() => import("./modules/inventory/pages/StockEntry").then(m => ({ default: m.StockEntry })));
 const StockWithdrawal = lazy(() => import("./modules/inventory/pages/StockWithdrawal").then(m => ({ default: m.StockWithdrawal })));
 const StockHistory = lazy(() => import("./modules/inventory/pages/StockHistory").then(m => ({ default: m.StockHistory })));
+const InfoResourcesPage = lazy(() => import("./modules/info/pages/InfoResourcesPage").then(m => ({ default: m.InfoResourcesPage })));
 const SettingsPage = lazy(() => import("./modules/settings/SettingsPage").then(m => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("./modules/settings/ProfilePage").then(m => ({ default: m.ProfilePage })));
 
@@ -108,6 +109,7 @@ export default function App() {
             <Route path="filamentos" element={<FilamentsPage />} />
             <Route path="blanks" element={<BlanksPage />} />
             <Route path="mockups" element={<MockupTemplatesPage />} />
+            <Route path="info" element={<InfoResourcesPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="perfil" element={<ProfilePage />} />
             <Route path="" element={<Navigate to="/inicio" replace />} />

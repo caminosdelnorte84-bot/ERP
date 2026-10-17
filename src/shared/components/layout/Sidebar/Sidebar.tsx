@@ -31,6 +31,7 @@ import {
   Plus,
   Pencil,
   Settings,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -316,6 +317,11 @@ export const Sidebar = memo(() => {
             {CRM_ROUTES.map((route) => (
               <SidebarItem key={route.path} {...route} highlight={route.highlight ?? 'sky'} />
             ))}
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-slate-800">
+            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 ml-3" aria-hidden="true">Info</p>
+            <SidebarItem path="/info" label="Repositorio de Info" icon={BookOpen} highlight="sky" />
           </div>
 
           <div className="pt-3 mt-3 border-t border-slate-800">
