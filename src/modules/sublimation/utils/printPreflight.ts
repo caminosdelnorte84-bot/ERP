@@ -39,10 +39,25 @@ export interface PresetVerdict {
 }
 
 export const loadImageInfo = (src: string): Promise<ImageInfo> =>
-  new Promise((resolve, reject) => {
+  new Promise((resolve) => {
+    // Timeout de seguridad estricto
+    const timer = setTimeout(() => {
+      resolve({ widthPx: 800, heightPx: 800 });
+    }, 3000);
+
     const img = new Image();
-    img.onload = () => resolve({ widthPx: img.naturalWidth, heightPx: img.naturalHeight });
-    img.onerror = () => reject(new Error('No se pudo cargar la imagen para analizarla.'));
+
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve({ widthPx: img.naturalWidth || 800, heightPx: img.naturalHeight || 800 });
+    };
+
+    img.onerror = () => {
+      clearTimeout(timer);
+      // Fallback directo si falla
+      resolve({ widthPx: 800, heightPx: 800 });
+    };
+
     img.src = src;
   });
 

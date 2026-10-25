@@ -271,10 +271,17 @@ export const DesignStudioModal = ({
     setError(null);
     try {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      const timer = setTimeout(() => {
+        setBusy(null);
+        setError('Tiempo de espera agotado al generar el patrón.');
+      }, 10000);
+
       img.onload = () => {
+        clearTimeout(timer);
         const canvas = document.createElement('canvas');
-        const size = Math.max(img.naturalWidth, img.naturalHeight);
+        const w = img.naturalWidth || 800;
+        const h = img.naturalHeight || 800;
+        const size = Math.max(w, h);
         canvas.width = size * 3;
         canvas.height = size * 3;
         const ctx = canvas.getContext('2d');
@@ -286,24 +293,60 @@ export const DesignStudioModal = ({
           for (let y = 0; y < 3; y++) {
             ctx.drawImage(
               img,
-              x * size + (size - img.naturalWidth) / 2,
-              y * size + (size - img.naturalHeight) / 2,
+              x * size + (size - w) / 2,
+              y * size + (size - h) / 2,
             );
           }
         }
-        const dataUrl = canvas.toDataURL('image/png');
-        setResult({
-          kind: 'png',
-          label: 'patrón continuo (PigmentaLab)',
-          dataUrl,
-        });
+        try {
+          const dataUrl = canvas.toDataURL('image/png');
+          setResult({
+            kind: 'png',
+            label: 'patrón continuo (PigmentaLab)',
+            dataUrl,
+          });
+          toast('Patrón continuo generado con éxito', { type: 'success' });
+        } catch {
+          setError('No se pudo exportar el canvas por restricciones de seguridad (CORS). Probá subiendo la imagen como archivo.');
+        }
         setBusy(null);
-        toast('Patrón continuo generado con éxito', { type: 'success' });
       };
+
       img.onerror = () => {
-        setBusy(null);
-        setError('No se pudo cargar la imagen para generar el patrón.');
+        clearTimeout(timer);
+        // Fallback without crossOrigin
+        const img2 = new Image();
+        img2.onload = () => {
+          const canvas = document.createElement('canvas');
+          const w = img2.naturalWidth || 800;
+          const h = img2.naturalHeight || 800;
+          const size = Math.max(w, h);
+          canvas.width = size * 3;
+          canvas.height = size * 3;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            for (let x = 0; x < 3; x++) {
+              for (let y = 0; y < 3; y++) {
+                ctx.drawImage(img2, x * size + (size - w) / 2, y * size + (size - h) / 2);
+              }
+            }
+            try {
+              const dataUrl = canvas.toDataURL('image/png');
+              setResult({ kind: 'png', label: 'patrón continuo (PigmentaLab)', dataUrl });
+              toast('Patrón continuo generado con éxito', { type: 'success' });
+            } catch {
+              setError('CORS bloqueó el acceso a la imagen. Subila como archivo local.');
+            }
+          }
+          setBusy(null);
+        };
+        img2.onerror = () => {
+          setBusy(null);
+          setError('No se pudo cargar la imagen para generar el patrón.');
+        };
+        img2.src = src;
       };
+
       img.src = src;
     } catch {
       setBusy(null);
