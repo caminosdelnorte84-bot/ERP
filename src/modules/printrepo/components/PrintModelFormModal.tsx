@@ -225,7 +225,7 @@ export function PrintModelFormModal({
                   handleScrape();
                 }}
                 disabled={isScraping || isSaving}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-violet-600/25 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
                 {isScraping ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
