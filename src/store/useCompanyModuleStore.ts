@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useTenantStore } from './useTenantStore';
+import { supabase } from '../lib/supabase';
 
 export interface CompanyModuleState {
   enabledModules: string[];
@@ -8,22 +9,32 @@ export interface CompanyModuleState {
   reset: () => void;
 }
 
+const ALL_MODULES = ['orders','quotes','catalog','sublimation','printjobs','mockups','crm','inventory','finance'];
+
 export const useCompanyModuleStore = create<CompanyModuleState>((set, get) => ({
-  enabledModules: [],
+  enabledModules: ALL_MODULES,
   isEnabled: (code) => get().enabledModules.includes(code),
-  loadForCompany: async (_companyId) => {
+  loadForCompany: async (companyId: string) => {
     const run = async () => {
       try {
-        // Aquí irá la consulta a company_modules por company_id
-        // (reemplazar con supabase.select() cuando esté aplicado 035)
-        set({ enabledModules: ['orders','quotes','catalog','sublimation','printjobs','mockups','crm','inventory','finance'] });
+        const { data, error } = await (supabase as any)
+          .from('company_modules')
+          .select('module_code')
+          .eq('company_id', companyId)
+          .eq('enabled', true);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          set({ enabledModules: data.map((d: any) => d.module_code) });
+        } else {
+          set({ enabledModules: ALL_MODULES });
+        }
       } catch {
-        set({ enabledModules: [] });
+        set({ enabledModules: ALL_MODULES });
       }
     };
     void run();
   },
-  reset: () => set({ enabledModules: [] }),
+  reset: () => set({ enabledModules: ALL_MODULES }),
 }));
 
 // Suscribirse a cambio de empresa para reset (como useOrderStore)

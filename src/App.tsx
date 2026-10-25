@@ -60,7 +60,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <a href="#contenido-principal" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-white focus:text-black">
+      <a href="#contenido-principal" className="sr-only focus:not-sr-only focus:absolute focus:z-100 focus:p-4 focus:bg-white focus:text-black">
         Saltar al contenido principal
       </a>
       <ToastContainer />

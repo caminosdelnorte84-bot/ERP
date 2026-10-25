@@ -91,10 +91,11 @@ export function PrintModelFormModal({
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(
-          data?.error ?? `No se pudo extraer la información (código ${response.status}).`,
-        );
+        let errorMessage = `No se pudo extraer la información (código ${response.status}).`;
+        if (response.status === 404) {
+          errorMessage = 'El servicio de autocompletado (Worker) no está activo. Verificá que el servidor esté corriendo.';
+        }
+        throw new Error(errorMessage);
       }
 
       const result = (await response.json()) as {
@@ -123,8 +124,8 @@ export function PrintModelFormModal({
       toast('Datos extraídos del enlace. Revisá y guardá.', { type: 'success' });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo extraer la información.';
-      setError(message);
-      toast('Error al extraer datos del enlace', { type: 'error' });
+      setError(`${message} Podés completar los datos manualmente abajo.`);
+      toast('Autocompletado no disponible. Completá los datos a mano.', { type: 'info' });
     } finally {
       setIsScraping(false);
     }
@@ -207,9 +208,13 @@ export function PrintModelFormModal({
               </div>
               <button
                 type="button"
-                onClick={handleScrape}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleScrape();
+                }}
                 disabled={isScraping || isSaving}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-violet-600/25 transition-colors transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-violet-600/25 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
                 {isScraping ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />

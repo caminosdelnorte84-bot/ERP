@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import Swal from 'sweetalert2';
-import { Building2, MapPin, Phone, Globe, FileText, Hash, Save, X } from 'lucide-react';
+import { Building2, MapPin, Phone, Globe, FileText, Hash, Save, X, Trash2, Boxes } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../shared/types/database.types';
 
@@ -12,6 +12,7 @@ interface CompanyFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved: (company: { id: string; name: string }) => void;
+  onDeleted?: (companyId: string) => void;
   editCompany?: CompanyRow | null;
 }
 
@@ -30,6 +31,20 @@ const PROVINCIAS = [
   'Tierra del Fuego', 'Tucumán',
 ];
 
+const ALL_MODULE_CODES = ['orders','quotes','catalog','sublimation','printjobs','mockups','crm','inventory','finance'];
+
+const AVAILABLE_MODULES = [
+  { code: 'orders', label: 'Pedidos', description: 'Gestión de pedidos de clientes' },
+  { code: 'quotes', label: 'Presupuestos B2B', description: 'Cotizaciones y presupuestos' },
+  { code: 'catalog', label: 'Catálogo', description: 'Catálogo de productos' },
+  { code: 'sublimation', label: 'Sublimación y Textil', description: 'Repositorio de sublimación y blanks' },
+  { code: 'printjobs', label: 'Impresión 3D', description: 'Repositorio 3D y filamentos' },
+  { code: 'mockups', label: 'Mockups Base', description: 'Mockups y visualizaciones' },
+  { code: 'crm', label: 'CRM / Directorio', description: 'Clientes y cuentas corrientes' },
+  { code: 'inventory', label: 'Stock y Compras', description: 'Inventario, insumos y proveedores' },
+  { code: 'finance', label: 'Finanzas y Tesorería', description: 'Tesorería, finanzas y rentabilidad' },
+];
+
 const initialState = {
   name: '',
   commercial_name: '',
@@ -45,10 +60,12 @@ const initialState = {
   notes: '',
 };
 
-export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }: CompanyFormModalProps) => {
+export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, onDeleted, editCompany }: CompanyFormModalProps) => {
   const [form, setForm] = useState(initialState);
+  const [selectedModules, setSelectedModules] = useState<string[]>(ALL_MODULE_CODES);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'fiscal' | 'location' | 'contact'>('general');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'general' | 'fiscal' | 'location' | 'contact' | 'modules'>('general');
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -68,8 +85,22 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
           postal_code: editCompany.postal_code || '',
           notes: editCompany.notes || '',
         });
+        // Fetch enabled modules
+        (supabase as any)
+          .from('company_modules')
+          .select('module_code')
+          .eq('company_id', editCompany.id)
+          .eq('enabled', true)
+          .then(({ data }: any) => {
+            if (data && data.length > 0) {
+              setSelectedModules(data.map((d: any) => d.module_code));
+            } else {
+              setSelectedModules(ALL_MODULE_CODES);
+            }
+          });
       } else {
         setForm(initialState);
+        setSelectedModules(ALL_MODULE_CODES);
       }
       requestAnimationFrame(() => nameRef.current?.focus());
     }
@@ -85,6 +116,7 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
 
     setIsSubmitting(true);
     try {
+      let targetCompanyId = '';
       if (editCompany) {
         const payload: CompanyUpdate = {
           name: form.name.trim().toUpperCase(),
@@ -102,6 +134,7 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
         };
         const { error } = await supabase.from('companies').update(payload).eq('id', editCompany.id);
         if (error) throw error;
+        targetCompanyId = editCompany.id;
         onSaved({ id: editCompany.id, name: form.name.trim().toUpperCase() });
       } else {
         const payload: CompanyInsert = {
@@ -120,8 +153,19 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
         };
         const { data, error } = await supabase.from('companies').insert([payload]).select('id, name').single();
         if (error) throw error;
+        targetCompanyId = data!.id;
         onSaved(data!);
       }
+
+      // Save module settings
+      const moduleRows = ALL_MODULE_CODES.map((code) => ({
+        company_id: targetCompanyId,
+        module_code: code,
+        enabled: selectedModules.includes(code),
+        updated_at: new Date().toISOString(),
+      }));
+      await (supabase as any).from('company_modules').upsert(moduleRows, { onConflict: 'company_id,module_code' });
+
       Swal.fire({
         icon: 'success',
         title: editCompany ? 'Empresa actualizada' : 'Empresa creada',
@@ -142,7 +186,55 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
     } finally {
       setIsSubmitting(false);
     }
-  }, [form, editCompany, onSaved, onClose]);
+  }, [form, editCompany, selectedModules, onSaved, onClose]);
+
+  const handleDelete = useCallback(async () => {
+    if (!editCompany) return;
+
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar la empresa "${editCompany.name}"? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      background: '#0f172a',
+      color: '#fff',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('companies').delete().eq('id', editCompany.id);
+      if (error) throw error;
+
+      if (onDeleted) {
+        onDeleted(editCompany.id);
+      }
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Empresa eliminada',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#0f172a',
+        color: '#fff',
+      });
+      onClose();
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err instanceof Error ? err.message : 'No se pudo eliminar la empresa',
+        background: '#0f172a',
+        color: '#fff',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [editCompany, onDeleted, onClose]);
 
   if (!isOpen) return null;
 
@@ -151,6 +243,7 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
     { id: 'fiscal' as const, label: 'Fiscal', icon: FileText },
     { id: 'location' as const, label: 'Ubicación', icon: MapPin },
     { id: 'contact' as const, label: 'Contacto', icon: Phone },
+    { id: 'modules' as const, label: 'Módulos', icon: Boxes },
   ];
 
   return (
@@ -392,10 +485,81 @@ export const CompanyFormModal = memo(({ isOpen, onClose, onSaved, editCompany }:
               </div>
             </>
           )}
+
+          {/* Modules Tab */}
+          {activeTab === 'modules' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Selecciona los módulos activos para esta empresa:
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedModules(ALL_MODULE_CODES)}
+                    className="text-[10px] font-bold text-blue-500 hover:underline uppercase"
+                  >
+                    Marcar todos
+                  </button>
+                  <span className="text-slate-400">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedModules([])}
+                    className="text-[10px] font-bold text-slate-400 hover:underline uppercase"
+                  >
+                    Desmarcar todos
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {AVAILABLE_MODULES.map((mod) => {
+                  const isChecked = selectedModules.includes(mod.code);
+                  return (
+                    <label
+                      key={mod.code}
+                      className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${
+                        isChecked
+                          ? 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-500/50 text-slate-900 dark:text-white'
+                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedModules((prev) => [...prev, mod.code]);
+                          } else {
+                            setSelectedModules((prev) => prev.filter((c) => c !== mod.code));
+                          }
+                        }}
+                        className="mt-0.5 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <div>
+                        <p className="text-xs font-bold">{mod.label}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{mod.description}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </form>
 
         {/* Footer */}
         <div className="p-8 pt-0 flex gap-3">
+          {editCompany && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="flex items-center justify-center gap-2 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white px-5 py-5 rounded-2xl font-black uppercase tracking-widest border border-rose-500/30 transition-colors disabled:opacity-50"
+              title="Eliminar empresa"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !form.name.trim()}

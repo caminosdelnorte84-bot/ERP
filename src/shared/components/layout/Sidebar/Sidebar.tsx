@@ -39,11 +39,27 @@ import { supabase } from '../../../../lib/supabase';
 import { useThemeStore } from '../../../../store/useThemeStore';
 import { useTenantStore } from '../../../../store/useTenantStore';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { useCompanyModuleStore } from '../../../../store/useCompanyModuleStore';
 const CompanyFormModal = lazy(() =>
   import('../../ui/CompanyFormModal').then((m) => ({ default: m.CompanyFormModal })),
 );
+import type { Database } from '../../../../shared/types/database.types';
+type CompanyRow = Database['public']['Tables']['companies']['Row'];
+
 import { NotificationBell } from '../../notifications/NotificationBell';
 import { RaicesLogo } from '../../ui/RaicesLogo';
+
+const getModuleForPath = (path: string) => {
+  if (path === '/pedidos') return 'orders';
+  if (path === '/cotizador') return 'quotes';
+  if (path === '/sublimacion' || path === '/blanks' || path === '/calculadora-sublimacion' || path === '/produccion-sublimacion') return 'sublimation';
+  if (path === '/mockups') return 'mockups';
+  if (path.includes('3d') || path === '/filamentos') return 'printjobs';
+  if (path === '/inbox' || path === '/clientes' || path === '/cuentas-corrientes') return 'crm';
+  if (path === '/inventario' || path === '/insumos' || path === '/proveedores') return 'inventory';
+  if (path === '/tesoreria' || path === '/finanzas' || path === '/rentabilidad' || path === '/calculadora') return 'finance';
+  return null;
+};
 
 interface NavRoute {
   readonly path: string;
@@ -129,13 +145,13 @@ const SidebarItem = memo(({ path, label, icon: Icon, highlight = 'brand', end }:
     if (!isActive) return `${base} text-slate-400 hover:bg-slate-800 hover:text-slate-200`;
 
     switch (highlight) {
-      case 'indigo': return `${base} bg-brand-600 text-white shadow-lg shadow-brand-600/30 border-l-4 border-white/70`;
-      case 'rose': return `${base} bg-danger-600 text-white shadow-lg shadow-danger-600/30 border-l-4 border-white/70`;
-      case 'emerald': return `${base} bg-success-600 text-white shadow-lg shadow-success-600/20 border-l-4 border-white/70`;
-      case 'fuchsia': return `${base} bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/30 border-l-4 border-white/70`;
-      case 'orange': return `${base} bg-orange-600 text-white shadow-lg shadow-orange-600/30 border-l-4 border-white/70`;
-      case 'sky': return `${base} bg-sky-600 text-white shadow-lg shadow-sky-600/30 border-l-4 border-white/70`;
-      default: return `${base} bg-brand-600 text-white shadow-lg shadow-brand-600/20 border-l-4 border-white/70`;
+      case 'indigo': return `${base} bg-brand-600 text-white shadow-lg shadow-brand-600/30`;
+      case 'rose': return `${base} bg-danger-600 text-white shadow-lg shadow-danger-600/30`;
+      case 'emerald': return `${base} bg-success-600 text-white shadow-lg shadow-success-600/20`;
+      case 'fuchsia': return `${base} bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/30`;
+      case 'orange': return `${base} bg-orange-600 text-white shadow-lg shadow-orange-600/30`;
+      case 'sky': return `${base} bg-sky-600 text-white shadow-lg shadow-sky-600/30`;
+      default: return `${base} bg-brand-600 text-white shadow-lg shadow-brand-600/20`;
     }
   };
 
@@ -182,17 +198,18 @@ SidebarUserFooter.displayName = 'SidebarUserFooter';
 export const Sidebar = memo(() => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const { activeCompanyId, setActiveCompany } = useTenantStore();
+  const isModuleEnabled = useCompanyModuleStore((state) => state.isEnabled);
   const navigate = useNavigate();
 
-  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [companies, setCompanies] = useState<CompanyRow[]>([]);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string } | null>(null);
+  const [editingCompany, setEditingCompany] = useState<CompanyRow | null>(null);
 
   const fetchCompanies = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, name")
+        .select("*")
         .order("name");
       if (error) throw error;
       if (data && data.length > 0) {
@@ -210,17 +227,29 @@ export const Sidebar = memo(() => {
     fetchCompanies();
   }, [fetchCompanies]);
 
+  useEffect(() => {
+    if (activeCompanyId) {
+      void useCompanyModuleStore.getState().loadForCompany(activeCompanyId);
+    }
+  }, [activeCompanyId]);
+
   const handleCompanySaved = useCallback((company: { id: string; name: string }) => {
-    setCompanies((prev) => {
-      const exists = prev.find((c) => c.id === company.id);
-      if (exists) {
-        return prev.map((c) => (c.id === company.id ? company : c));
-      }
-      return [...prev, company].sort((a, b) => a.name.localeCompare(b.name));
-    });
+    fetchCompanies();
     setActiveCompany(company.id);
     navigate('/');
-  }, [setActiveCompany, navigate]);
+  }, [fetchCompanies, setActiveCompany, navigate]);
+
+  const handleCompanyDeleted = useCallback((deletedId: string) => {
+    setCompanies((prev) => {
+      const remaining = prev.filter((c) => c.id !== deletedId);
+      if (activeCompanyId === deletedId) {
+        const nextId = remaining.length > 0 ? remaining[0].id : '';
+        setActiveCompany(nextId);
+      }
+      return remaining;
+    });
+    navigate('/');
+  }, [activeCompanyId, setActiveCompany, navigate]);
 
   const handleEditCompany = useCallback(() => {
     const current = companies.find((c) => c.id === activeCompanyId);
@@ -301,23 +330,40 @@ export const Sidebar = memo(() => {
 
         {/* NAVIGATION */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5 custom-scrollbar">
-          {NAV_SECTIONS.map((section, sectionIndex) => (
-            <div key={section.label} className={sectionIndex > 0 ? 'pt-3 mt-3 border-t border-slate-800' : ''}>
-              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 ml-3" aria-hidden="true">
-                {section.label}
-              </p>
-              {section.routes.map((route) => (
-                <SidebarItem key={route.path} {...route} highlight={route.highlight ?? section.defaultHighlight} />
-              ))}
-            </div>
-          ))}
+          {NAV_SECTIONS.map((section, sectionIndex) => {
+            const visibleRoutes = section.routes.filter((route) => {
+              const mod = getModuleForPath(route.path);
+              return !mod || isModuleEnabled(mod);
+            });
+            if (visibleRoutes.length === 0) return null;
 
-          <div className="pt-3 mt-3 border-t border-slate-800">
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 ml-3" aria-hidden="true">CRM</p>
-            {CRM_ROUTES.map((route) => (
-              <SidebarItem key={route.path} {...route} highlight={route.highlight ?? 'sky'} />
-            ))}
-          </div>
+            return (
+              <div key={section.label} className={sectionIndex > 0 ? 'pt-3 mt-3 border-t border-slate-800' : ''}>
+                <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 ml-3" aria-hidden="true">
+                  {section.label}
+                </p>
+                {visibleRoutes.map((route) => (
+                  <SidebarItem key={route.path} {...route} highlight={route.highlight ?? section.defaultHighlight} />
+                ))}
+              </div>
+            );
+          })}
+
+          {(() => {
+            const visibleCrm = CRM_ROUTES.filter((route) => {
+              const mod = getModuleForPath(route.path);
+              return !mod || isModuleEnabled(mod);
+            });
+            if (visibleCrm.length === 0) return null;
+            return (
+              <div className="pt-3 mt-3 border-t border-slate-800">
+                <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 ml-3" aria-hidden="true">CRM</p>
+                {visibleCrm.map((route) => (
+                  <SidebarItem key={route.path} {...route} highlight={route.highlight ?? 'sky'} />
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="pt-3 mt-3 border-t border-slate-800">
             <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 ml-3" aria-hidden="true">Info</p>
@@ -349,7 +395,8 @@ export const Sidebar = memo(() => {
             isOpen={isCompanyModalOpen}
             onClose={() => { setIsCompanyModalOpen(false); setEditingCompany(null); }}
             onSaved={handleCompanySaved}
-            editCompany={editingCompany as any}
+            onDeleted={handleCompanyDeleted}
+            editCompany={editingCompany}
           />
         </Suspense>
       )}

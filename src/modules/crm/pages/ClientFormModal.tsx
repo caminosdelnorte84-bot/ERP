@@ -85,7 +85,7 @@ export const ClientFormModal = memo(
     if (!isOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
         <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
           <div className="p-8">
             <h2 className="text-2xl font-black uppercase italic mb-6 dark:text-white">
@@ -127,7 +127,7 @@ export const ClientFormModal = memo(
                   }
                 >
                   {CUSTOMER_TYPES.map((t) => (
-                    <option key={t.id} value={t.id}>
+                    <option key={t.value} value={t.value}>
                       {t.label}
                     </option>
                   ))}
@@ -204,7 +204,7 @@ export const ClientFormModal = memo(
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-600/20 active:scale-95 transition-colors transition-transform disabled:opacity-50"
+                className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-600/20 active:scale-95 transition-all disabled:opacity-50"
               >
                 {isSubmitting ? "Guardando..." : "Guardar Cliente"}
               </button>
