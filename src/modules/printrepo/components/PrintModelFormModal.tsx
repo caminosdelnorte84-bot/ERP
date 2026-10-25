@@ -180,11 +180,22 @@ export function PrintModelFormModal({
         </div>
 
         <FormField label="Categoría">
-          <Select
-            value={form.category ?? 'General'}
-            onChange={(e) => set('category', e.target.value)}
-            options={DEFAULT_CATEGORIES.map((c) => ({ value: c, label: c }))}
-          />
+          <div className="space-y-1">
+            <Input
+              value={form.category ?? 'General'}
+              onChange={(e) => set('category', e.target.value)}
+              placeholder="Ej: General, Llaveros, Soportes..."
+              list="print-categories"
+            />
+            <datalist id="print-categories">
+              {DEFAULT_CATEGORIES.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            <p className="text-[9px] text-slate-400">
+              Escribí una categoría nueva o seleccioná una sugerida.
+            </p>
+          </div>
         </FormField>
 
         <FormField label="Estado">
