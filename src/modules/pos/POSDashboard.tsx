@@ -11,7 +11,6 @@ import {
   Clock, Printer, Tag, Package, AlertTriangle, PackageX,
   User, Star, Percent, DollarSign, History, Lock,
   CreditCard, CircleDollarSign,
-  PlusCircle, Edit, Save, X as CloseX,
 } from 'lucide-react';
 
 interface CartItem {

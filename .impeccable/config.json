@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/modules/pos/POSDashboard.tsx"
+        ],
+        "createdAt": "2026-10-25T20:39:02.527Z",
+        "reason": "intentional design choice"
+      }
+    ]
+  }
+}
