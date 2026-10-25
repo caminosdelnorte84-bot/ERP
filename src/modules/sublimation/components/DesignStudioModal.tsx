@@ -265,6 +265,52 @@ export const DesignStudioModal = ({
     }
   };
 
+  const handlePattern = () => {
+    if (!src) return;
+    setBusy('vectorize');
+    setError(null);
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = Math.max(img.naturalWidth, img.naturalHeight);
+        canvas.width = size * 3;
+        canvas.height = size * 3;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setBusy(null);
+          return;
+        }
+        for (let x = 0; x < 3; x++) {
+          for (let y = 0; y < 3; y++) {
+            ctx.drawImage(
+              img,
+              x * size + (size - img.naturalWidth) / 2,
+              y * size + (size - img.naturalHeight) / 2,
+            );
+          }
+        }
+        const dataUrl = canvas.toDataURL('image/png');
+        setResult({
+          kind: 'png',
+          label: 'patrón continuo (PigmentaLab)',
+          dataUrl,
+        });
+        setBusy(null);
+        toast('Patrón continuo generado con éxito', { type: 'success' });
+      };
+      img.onerror = () => {
+        setBusy(null);
+        setError('No se pudo cargar la imagen para generar el patrón.');
+      };
+      img.src = src;
+    } catch {
+      setBusy(null);
+      setError('Error al generar el patrón.');
+    }
+  };
+
   const handleDownload = () => {
     if (!result) return;
     const filename = `${srcLabel}-${result.label.replace(/\s+/g, '-')}`;
@@ -494,6 +540,16 @@ export const DesignStudioModal = ({
         >
           {busy === 'remove_bg' ? <Spinner className="w-3.5 h-3.5" /> : <Scissors className="w-3.5 h-3.5" aria-hidden="true" />}
           Quitar fondo (IA)
+        </button>
+
+        <button
+          type="button"
+          onClick={handlePattern}
+          disabled={!src || busy !== null}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-600/20 transition-colors transition-transform active:scale-95"
+        >
+          <Wand2 className="w-3.5 h-3.5" aria-hidden="true" />
+          Patrón Continuo (Pigmenta)
         </button>
 
         <div className="flex gap-2 items-stretch">
