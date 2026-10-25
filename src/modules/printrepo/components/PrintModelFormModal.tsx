@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import Swal from 'sweetalert2';
 import { Link2, Image as ImageIcon, Wand2, Loader2 } from 'lucide-react';
 import { Modal, FormField } from '../../../shared/components/ui/Modal';
 import { Input } from '../../../shared/components/ui/Input';
@@ -61,12 +62,22 @@ export function PrintModelFormModal({
   const toast = useToastStore((s) => s.toast);
   const addModel = usePrintModelStore((s) => s.addModel);
   const updateModel = usePrintModelStore((s) => s.updateModel);
+  const models = usePrintModelStore((s) => s.models);
   const session = useAuthStore((s) => s.session);
 
   const [form, setForm] = useState<PrintModelInput>(() => buildInitialForm(editingModel));
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
+
+  const categories = Array.from(
+    new Set([
+      ...DEFAULT_CATEGORIES,
+      ...models.map((m) => m.category).filter(Boolean),
+      ...customCategories,
+    ])
+  );
 
   const set = <K extends keyof PrintModelInput>(key: K, value: PrintModelInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -180,22 +191,35 @@ export function PrintModelFormModal({
         </div>
 
         <FormField label="Categoría">
-          <div className="space-y-1">
-            <Input
-              value={form.category ?? 'General'}
-              onChange={(e) => set('category', e.target.value)}
-              placeholder="Ej: General, Llaveros, Soportes..."
-              list="print-categories"
-            />
-            <datalist id="print-categories">
-              {DEFAULT_CATEGORIES.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-            <p className="text-[9px] text-slate-400">
-              Escribí una categoría nueva o seleccioná una sugerida.
-            </p>
-          </div>
+          <Select
+            value={form.category ?? 'General'}
+            onChange={async (e) => {
+              const val = e.target.value;
+              if (val === '__new__') {
+                const result = await Swal.fire({
+                  title: 'Nueva categoría',
+                  input: 'text',
+                  inputPlaceholder: 'Nombre de la nueva categoría...',
+                  showCancelButton: true,
+                  confirmButtonText: 'Agregar',
+                  cancelButtonText: 'Cancelar',
+                  background: '#0f172a',
+                  color: '#fff',
+                });
+                if (result.isConfirmed && result.value?.trim()) {
+                  const newCat = result.value.trim();
+                  setCustomCategories((prev) => [...prev, newCat]);
+                  set('category', newCat);
+                }
+              } else {
+                set('category', val);
+              }
+            }}
+            options={[
+              ...categories.map((c) => ({ value: c, label: c })),
+              { value: '__new__', label: '+ Agregar nueva categoría...' },
+            ]}
+          />
         </FormField>
 
         <FormField label="Estado">
