@@ -118,27 +118,48 @@ export const InfoResourcesPage = () => {
     const { value: formValues } = await Swal.fire({
       title: 'Agregar Nota o Dato',
       html: `
-        <div style="text-align: left; display: flex; flex-direction: column; gap: 10px;">
-          <label style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #94a3b8;">Sección</label>
-          <select id="swal-seccion" class="swal2-select" style="background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px; width: 100%; padding: 8px;">
-            ${DEFAULT_SECCIONES.map((s) => `<option value="${s.id}">${s.titulo}</option>`).join('')}
-          </select>
-          <label style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #94a3b8;">Título / Concepto *</label>
-          <input id="swal-label" class="swal2-input" placeholder="Ej: Temperatura remeras algodón" style="background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px; width: 100%; margin: 0; padding: 8px;">
-          <label style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #94a3b8;">Valor / Parámetro</label>
-          <input id="swal-valor" class="swal2-input" placeholder="Ej: 190°C / 50 segundos" style="background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px; width: 100%; margin: 0; padding: 8px;">
-          <label style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #94a3b8;">Enlace Web (Opcional)</label>
-          <input id="swal-link" class="swal2-input" placeholder="https://..." style="background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px; width: 100%; margin: 0; padding: 8px;">
-          <label style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #94a3b8;">Notas de experiencia / Detalle</label>
-          <textarea id="swal-nota" class="swal2-textarea" placeholder="Ej: Probar con teflón doble para evitar..." style="background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px; width: 100%; margin: 0; padding: 8px; height: 80px;"></textarea>
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 16px; padding: 10px 5px; box-sizing: border-box; overflow-x: hidden;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Sección</label>
+            <select id="swal-seccion" class="swal2-select" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; padding: 10px; margin: 0; font-size: 14px; cursor: pointer; outline: none;">
+              ${DEFAULT_SECCIONES.map((s) => `<option value="${s.id}">${s.titulo}</option>`).join('')}
+            </select>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Título / Concepto *</label>
+            <input id="swal-label" class="swal2-input" placeholder="Ej: Temperatura remeras algodón" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; box-sizing: border-box; outline: none;">
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
+              <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Valor / Parámetro</label>
+              <input id="swal-valor" class="swal2-input" placeholder="190°C / 50 seg" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; box-sizing: border-box; outline: none;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
+              <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Link (Opcional)</label>
+              <input id="swal-link" class="swal2-input" placeholder="https://..." style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; box-sizing: border-box; outline: none;">
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Notas de experiencia / Detalle</label>
+            <textarea id="swal-nota" class="swal2-textarea" placeholder="Consejos técnicos, precauciones..." style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; height: 100px; box-sizing: border-box; resize: none; outline: none;"></textarea>
+          </div>
         </div>
       `,
       background: '#0f172a',
-      color: '#fff',
+      color: '#f8fafc',
       showCancelButton: true,
       confirmButtonText: 'Guardar Nota',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#0284c7',
+      cancelButtonColor: '#334155',
+      customClass: {
+        popup: 'rounded-[2rem] border border-slate-800 shadow-2xl',
+        confirmButton: 'rounded-2xl px-6 py-3 font-black uppercase text-[10px] tracking-widest',
+        cancelButton: 'rounded-2xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
+      },
       preConfirm: () => {
         const secId = (document.getElementById('swal-seccion') as HTMLSelectElement)?.value;
         const label = (document.getElementById('swal-label') as HTMLInputElement)?.value?.trim();
