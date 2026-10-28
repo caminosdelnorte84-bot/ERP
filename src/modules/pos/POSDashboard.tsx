@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { ProductionRecountModal } from '../printjobs/components/ProductionRecountModal';
+import type { RecountItem } from '../printjobs/components/ProductionRecountModal';
 import { useCatalogStore } from '../../store/useCatalogStore';
 import type { CartItem as CatalogCartItem } from '../../store/useCatalogStore';
 import { useCrmStore } from '../crm/store/useCrmStore';
@@ -12,6 +14,7 @@ import {
   User, Star, Percent, DollarSign, History, Lock,
   CreditCard, CircleDollarSign,
 } from 'lucide-react';
+
 
 interface CartItem {
   variantId: string;
@@ -275,6 +278,38 @@ export const POSDashboard = () => {
     addToast('Venta guardada para continuar después', 'success');
   }, [cart, addToast]);
 
+  const [nombreRecibo, setNombreRecibo] = useState('');
+  const [itemManual, setItemManual] = useState('');
+  const [itemManualPrice, setItemManualPrice] = useState(0);
+  const [itemManualQty, setItemManualQty] = useState(1);
+  const [recountData, setRecountData] = useState<RecountItem[] | null>(null);
+
+  const handlePrint3dReceipt = () => setShowRecount(true);
+  const handleRecountConfirm = (items: RecountItem[]) => {
+    setRecountData(items);
+    addToast('Recuento registrado: ' + items.length + ' piezas', 'success');
+    setShowRecount(false);
+    // Aquí iría el registro en POS / recibo (integración con processSale)
+  };
+
+  const [recountItems, setRecountItems] = useState<RecountItem[]>([]);
+
+  const handleRecountConfirm = (items: RecountItem[]) => {
+    setRecountItems(items);
+    setShowRecount(false);
+    addToast(`Recuento 3D: ${items.length} pieza(s)`, 'success');
+  };
+
+  const handleAddManual = () => {
+    if (!itemManual.trim()) { addToast('Escribí qué vendés', 'warning'); return; }
+    const item: CatalogCartItem = { variantId: 'manual', productId: 'manual', name: itemManual, sku: 'MANUAL', size: '-', color: '-', price: itemManualPrice, qty: itemManualQty, maxQty: 999, category: 'manual' } as unknown as CatalogCartItem;
+    setCart((prev) => [...prev, item]);
+    addToast('Item manual agregado', 'success');
+    setItemManual('');
+    setItemManualPrice(0);
+    setItemManualQty(1);
+  };
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       addToast('El carrito está vacío', 'warning');
@@ -483,7 +518,8 @@ export const POSDashboard = () => {
               Mercadería
             </h2>
             <div className="flex items-center gap-2">
-              <button
+              <button onClick={handlePrint3dReceipt} className="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-500 hover:bg-indigo-400 text-white">Impresión 3D → Recibo</button>
+          <button
                 onClick={() => setShowRecentSales(!showRecentSales)}
                 className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 title="Ventas recientes"
@@ -966,7 +1002,7 @@ export const POSDashboard = () => {
                 <Printer className="w-4 h-4" />
               </button>
               <button
-                onClick={handleCheckout}
+                onClick={() => setShowRecount(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 text-white">Impr 3D → Recibo</button><button onClick={handleCheckout}
                 disabled={cart.length === 0 || isProcessing}
                 className={cn(
                   'flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors transition-transform active:scale-[0.97]',
@@ -991,3 +1027,4 @@ export const POSDashboard = () => {
     </div>
   );
 };
+{showRecount && <ProductionRecountModal open={showRecount} onClose={() => setShowRecount(false)} onConfirm={handleRecountConfirm} />}
