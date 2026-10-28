@@ -282,16 +282,7 @@ export const POSDashboard = () => {
   const [itemManual, setItemManual] = useState('');
   const [itemManualPrice, setItemManualPrice] = useState(0);
   const [itemManualQty, setItemManualQty] = useState(1);
-  const [recountData, setRecountData] = useState<RecountItem[] | null>(null);
-
-  const handlePrint3dReceipt = () => setShowRecount(true);
-  const handleRecountConfirm = (items: RecountItem[]) => {
-    setRecountData(items);
-    addToast('Recuento registrado: ' + items.length + ' piezas', 'success');
-    setShowRecount(false);
-    // Aquí iría el registro en POS / recibo (integración con processSale)
-  };
-
+  const [showRecount, setShowRecount] = useState(false);
   const [recountItems, setRecountItems] = useState<RecountItem[]>([]);
 
   const handleRecountConfirm = (items: RecountItem[]) => {
@@ -299,6 +290,8 @@ export const POSDashboard = () => {
     setShowRecount(false);
     addToast(`Recuento 3D: ${items.length} pieza(s)`, 'success');
   };
+
+  const handlePrint3dReceipt = () => setShowRecount(true);
 
   const handleAddManual = () => {
     if (!itemManual.trim()) { addToast('Escribí qué vendés', 'warning'); return; }

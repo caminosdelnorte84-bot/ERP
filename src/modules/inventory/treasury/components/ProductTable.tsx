@@ -97,7 +97,7 @@ export const ProductTable = ({ data, onDelete, deleteVariation, onUpdateStock, o
     columnHelper.accessor('displayStock', { 
       header: 'Stock', 
       cell: i => (
-        <span className={`font-black text-base tabular-nums ${i.getValue() <= i.row.original.minStock ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
+        <span className={`font-black text-base tabular-nums ${(i.getValue() ?? 0) <= (i.row.original.minStock ?? 0) ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
           {i.getValue()}
         </span>
       )

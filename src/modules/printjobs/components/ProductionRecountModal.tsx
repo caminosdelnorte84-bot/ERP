@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Printer, Check } from 'lucide-react';
 
-interface RecountItem {
+export interface RecountItem {
   id: string;
   name: string;
   total: number;
