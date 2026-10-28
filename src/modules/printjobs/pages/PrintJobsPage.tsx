@@ -13,6 +13,7 @@ import {
   AlertOctagon,
   Truck,
   Receipt,
+  Box,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { usePrintJobStore } from '../store/usePrintJobStore';
@@ -29,6 +30,9 @@ import { Spinner } from '../../../shared/components/ui/Spinner';
 import { formatDate, hoursToTime, timeToHours } from '../../../shared/utils/format';
 import { NewJobFromRepoModal } from '../components/NewJobFromRepoModal';
 import { DeliverJobModal } from '../components/DeliverJobModal';
+import { KitComponentRow, KitCard, KitProgressBadge } from '../kit';
+import { useKitJobMap } from '../kit/useKitJobMap';
+import type { KitJob } from '../kit/types';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-AR', {
@@ -51,6 +55,18 @@ export const PrintJobsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [showNewJob, setShowNewJob] = useState(false);
   const [deliverTarget, setDeliverTarget] = useState<PrintJob3D | null>(null);
+
+  // Datos de ejemplo para kits multi-pieza (solo capa UI)
+  const kitMap = useKitJobMap();
+  const [kitComponentsState, setKitComponentsState] = useState<Record<string, number>>({});
+
+  const updateComponentStatus = useMemo(
+    () => (componentId: string, completed: number) => {
+      setKitComponentsState((prev) => ({ ...prev, [componentId]: completed }));
+      // En producción aquí iría: store.updateKitComponent(...)
+    },
+    [],
+  );
 
   useEffect(() => {
     void fetchJobs();
@@ -253,6 +269,24 @@ export const PrintJobsPage = () => {
         ))}
       </div>
 
+      {/* RESUMEN DE KITS MULTI-PIEZA (UI de ejemplo) */}
+      <div className="rounded-3xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/40 to-slate-900/60 p-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-sm font-black text-white uppercase tracking-tight">Juegos listos para armar</h2>
+            <p className="text-[11px] font-bold text-slate-400 mt-0.5">Desglose de kits por componente (datos de ejemplo, sin backend).</p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {Array.from(kitMap.values()).map((kit: KitJob) => {
+              const comps = kit.components ?? [];
+              return (
+                <KitProgressBadge key={kit.id} components={comps} />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* FILTROS */}
       <div className="flex gap-1 overflow-x-auto">
         {['ALL', ...PRINT_JOB_STATUSES].map((s) => (
@@ -410,6 +444,28 @@ export const PrintJobsPage = () => {
           })}
         </div>
       )}
+
+      {/* VISTA ACORDEÓN DE KITS */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+          <Box size={16} className="text-indigo-300" aria-hidden />
+          Kits — vista plegable de componentes
+        </h3>
+        {Array.from(kitMap.values()).map((kit: KitJob) => {
+          // Simula que los componentes actualizados vienen del store local
+          const enrichedComponents = (kit.components ?? []).map((c) => ({
+            ...c,
+            completed: kitComponentsState[c.id] ?? c.completed,
+          }));
+          return (
+            <KitCard
+              key={kit.id}
+              job={{ ...kit, components: enrichedComponents }}
+              onUpdateComponent={updateComponentStatus}
+            />
+          );
+        })}
+      </div>
 
       {/* Nota al pie */}
       <p className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
