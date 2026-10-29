@@ -4,6 +4,8 @@ import type { RecountItem } from '../printjobs/components/ProductionRecountModal
 import { useCatalogStore } from '../../store/useCatalogStore';
 import type { CartItem as CatalogCartItem } from '../../store/useCatalogStore';
 import { useCrmStore } from '../crm/store/useCrmStore';
+import { useTenantStore } from '../../store/useTenantStore';
+import { Receipt } from './components/Receipt';
 import { ARS } from '../../shared/utils/format';
 import { cn } from '../../shared/utils/cn';
 import { CartItemCard } from './components/CartItemCard';
@@ -278,30 +280,14 @@ export const POSDashboard = () => {
     addToast('Venta guardada para continuar después', 'success');
   }, [cart, addToast]);
 
-  const [nombreRecibo, setNombreRecibo] = useState('');
-  const [itemManual, setItemManual] = useState('');
-  const [itemManualPrice, setItemManualPrice] = useState(0);
-  const [itemManualQty, setItemManualQty] = useState(1);
   const [showRecount, setShowRecount] = useState(false);
-  const [recountItems, setRecountItems] = useState<RecountItem[]>([]);
 
-  const handleRecountConfirm = (items: RecountItem[]) => {
-    setRecountItems(items);
+  const handleRecountConfirm = (_items: RecountItem[]) => {
     setShowRecount(false);
-    addToast(`Recuento 3D: ${items.length} pieza(s)`, 'success');
+    addToast(`Recuento 3D: ${_items.length} pieza(s)`, 'success');
   };
 
   const handlePrint3dReceipt = () => setShowRecount(true);
-
-  const handleAddManual = () => {
-    if (!itemManual.trim()) { addToast('Escribí qué vendés', 'warning'); return; }
-    const item: CatalogCartItem = { variantId: 'manual', productId: 'manual', name: itemManual, sku: 'MANUAL', size: '-', color: '-', price: itemManualPrice, qty: itemManualQty, maxQty: 999, category: 'manual' } as unknown as CatalogCartItem;
-    setCart((prev) => [...prev, item]);
-    addToast('Item manual agregado', 'success');
-    setItemManual('');
-    setItemManualPrice(0);
-    setItemManualQty(1);
-  };
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -448,39 +434,8 @@ export const POSDashboard = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  const printReceipt = () => {
-    const printContent = `
-      <html><head><title>Comprobante POS</title>
-      <style>
-        body { font-family: monospace; max-width: 300px; margin: 0 auto; padding: 20px; }
-        h2 { text-align: center; font-size: 16px; margin-bottom: 5px; }
-        p { text-align: center; font-size: 10px; color: #666; margin: 0 0 15px; }
-        .divider { border-top: 1px dashed #333; margin: 10px 0; }
-        .item { display: flex; justify-content: space-between; margin: 5px 0; font-size: 12px; }
-        .item-detail { font-size: 10px; color: #666; }
-        .total { font-size: 14px; font-weight: bold; text-align: right; margin-top: 10px; }
-        .footer { text-align: center; font-size: 9px; color: #999; margin-top: 20px; }
-      </style></head><body>
-      <h2>EPR RAÍCES</h2><p>Comprobante de Venta</p><p>${new Date().toLocaleDateString('es-AR')} ${new Date().toLocaleTimeString('es-AR')}</p>
-      <div class="divider"></div>
-      ${cart.map(i => `<div class="item"><span>${i.name} (${i.size}/${i.color}) x${i.qty}</span><span>${ARS.format(i.price * i.qty)}</span></div>`).join('')}
-      <div class="divider"></div>
-      ${discount > 0 ? `<div class="item"><span>Descuento:</span><span>-${ARS.format(discount)}</span></div>` : ''}
-      <div class="item"><span>Subtotal:</span><span>${ARS.format(subtotal)}</span></div>
-      <div class="item"><span>IVA (21%):</span><span>${ARS.format(iva)}</span></div>
-      <div class="total">TOTAL: ${ARS.format(grandTotal)}</div>
-      <div class="divider"></div>
-      ${payments.map(p => {
-        const m = paymentMethods.find(pm => pm.id === p.method_id);
-        return `<div class="item"><span>${m?.name || p.method_id}:</span><span>${ARS.format(p.amount)}</span></div>`;
-      }).join('')}
-      ${payments.length === 0 ? `<div class="item"><span>Medio de pago:</span><span>Sin definir</span></div>` : ''}
-      ${selectedCustomerData ? `<div class="item"><span>Cliente:</span><span>${selectedCustomerData.name}</span></div>` : ''}
-      <div class="footer">¡Gracias por tu compra!<br/>EPR Raíces - Moda Consciente</div>
-      </body></html>`;
-    const w = window.open('', '_blank', 'width=400,height=600');
-    if (w) { w.document.write(printContent); w.document.close(); w.print(); }
-  };
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const printReceipt = () => { if (receiptRef.current) window.print(); };
 
   return (
     <div className="h-auto lg:h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-4 animate-in fade-in duration-500">
@@ -994,8 +949,7 @@ export const POSDashboard = () => {
               >
                 <Printer className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => setShowRecount(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 text-white">Impr 3D → Recibo</button><button onClick={handleCheckout}
+              <button onClick={handleCheckout}
                 disabled={cart.length === 0 || isProcessing}
                 className={cn(
                   'flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors transition-transform active:scale-[0.97]',
@@ -1017,7 +971,25 @@ export const POSDashboard = () => {
           </div>
         </div>
       </div>
+
+      <div className="hidden print:block">
+        <Receipt
+          receiptRef={receiptRef}
+          companyId={useTenantStore.getState().activeCompanyId || ''}
+          items={cart.map(i => ({ name: i.name, qty: i.qty, price: i.price * i.qty, unitPrice: i.price }))}
+          customer={selectedCustomerData ? { name: selectedCustomerData.name, id: selectedCustomerData.id } : undefined}
+          total={grandTotal}
+          date={new Date().toLocaleDateString('es-AR') + ' ' + new Date().toLocaleTimeString('es-AR')}
+        />
+      </div>
+
+      {showRecount && (
+        <ProductionRecountModal
+          open={showRecount}
+          onClose={() => setShowRecount(false)}
+          onConfirm={handleRecountConfirm}
+        />
+      )}
     </div>
   );
 };
-{showRecount && <ProductionRecountModal open={showRecount} onClose={() => setShowRecount(false)} onConfirm={handleRecountConfirm} />}

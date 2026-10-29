@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { KitComponent } from './types';
 
 export function KitProgressBadge({ components }: { components: KitComponent[] }) {

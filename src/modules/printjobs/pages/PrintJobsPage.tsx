@@ -30,7 +30,7 @@ import { Spinner } from '../../../shared/components/ui/Spinner';
 import { formatDate, hoursToTime, timeToHours } from '../../../shared/utils/format';
 import { NewJobFromRepoModal } from '../components/NewJobFromRepoModal';
 import { DeliverJobModal } from '../components/DeliverJobModal';
-import { KitComponentRow, KitCard, KitProgressBadge } from '../kit';
+import { KitCard, KitProgressBadge } from '../kit';
 import { useKitJobMap } from '../kit/useKitJobMap';
 import type { KitJob } from '../kit/types';
 
@@ -58,15 +58,6 @@ export const PrintJobsPage = () => {
 
   // Datos de ejemplo para kits multi-pieza (solo capa UI)
   const kitMap = useKitJobMap();
-  const [kitComponentsState, setKitComponentsState] = useState<Record<string, number>>({});
-
-  const updateComponentStatus = useMemo(
-    () => (componentId: string, completed: number) => {
-      setKitComponentsState((prev) => ({ ...prev, [componentId]: completed }));
-      // En producción aquí iría: store.updateKitComponent(...)
-    },
-    [],
-  );
 
   useEffect(() => {
     void fetchJobs();
@@ -452,16 +443,10 @@ export const PrintJobsPage = () => {
           Kits — vista plegable de componentes
         </h3>
         {Array.from(kitMap.values()).map((kit: KitJob) => {
-          // Simula que los componentes actualizados vienen del store local
-          const enrichedComponents = (kit.components ?? []).map((c) => ({
-            ...c,
-            completed: kitComponentsState[c.id] ?? c.completed,
-          }));
           return (
             <KitCard
               key={kit.id}
-              job={{ ...kit, components: enrichedComponents }}
-              onUpdateComponent={updateComponentStatus}
+              job={kit}
             />
           );
         })}

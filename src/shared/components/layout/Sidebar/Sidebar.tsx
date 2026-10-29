@@ -32,6 +32,7 @@ import {
   Pencil,
   Settings,
   BookOpen,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -127,6 +128,7 @@ const NAV_SECTIONS: readonly NavSection[] = [
       { path: '/rentabilidad', label: 'Rentabilidad', icon: TrendingUp },
       { path: '/cotizador', label: 'Presupuestos B2B', icon: FileText, highlight: 'indigo' },
       { path: '/calculadora', label: 'Calculadora de Costos', icon: Calculator, highlight: 'indigo' },
+      { path: '/recibo', label: 'Nuevo recibo', icon: Receipt, highlight: 'emerald' },
     ],
   },
 ];

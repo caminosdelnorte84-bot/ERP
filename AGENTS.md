@@ -143,6 +143,27 @@ Mantener las últimas ~10 entradas y podar las viejas.
 
 ### Historial reciente
 
+- **2026-10 resolución de errores de compilación tsc, ESLint y suite vitest (114 tests OK)** —
+  Se corrigieron todos los errores de tipado TypeScript y advertencias de linter que bloqueaban el gate de compilación de `npm run build`:
+  (1) `POSDashboard.tsx`: import relativo de `useTenantStore` reparado (`../../../` a `../../`),
+  bloque JSX suelto fuera del retorno del componente (`{showRecount && ...}` tras `};`) reubicado
+  dentro del árbol JSX antes del cierre, eliminación de variables/estados muertos (`nombreRecibo`,
+  `itemManual`, `handleAddManual`), e integración del recibo con `print:block hidden` para que
+  no deforme la barra de acciones de venta;
+  (2) `Receipt.tsx` & `ReceiptProps`: `receiptRef` adaptado a `React.RefObject<HTMLDivElement | null>`
+  para compatibilidad con React 19 `useRef(null)`, uso efectivo del prop `logoUrl` en el encabezado
+  del comprobante (con fallback a avatar estilizado "R"), y extracción de la función de conversión
+  numérica a palabras a `utils/receiptFormatters.ts`;
+  (3) Tests de recibos: se eliminó `Receipt.test.tsx` (que dependía de `@testing-library/react` no
+  instalado) y se reemplazó por la suite nativa `src/modules/receipt/utils/receiptFormatters.test.ts`
+  con 5 tests que elevan el total a 114 tests pasando;
+  (4) `PrintJobsPage.tsx` & `KitProgressBadge.tsx`: eliminación de imports no utilizados (`useState`
+  en el badge, `KitComponentRow` en la página) y remoción del prop no soportado `onUpdateComponent` en
+  la llamada de `KitCard`.
+  Verificación: `tsc --noEmit -p tsconfig.app.json` limpio (0 errores), ESLint limpio en todos los
+  archivos tocados, 114 tests unitarios de Vitest OK, y `npm run build` completado exitosamente para
+  worker y cliente.
+
 - **2026-10 repositorio de información estático (menú Info)** — Nueva página
   `src/modules/info/pages/InfoResourcesPage.tsx`: recursos estáticos del negocio
   (contactos, links, procedimientos, datos de referencia) en un único array
@@ -505,3 +526,9 @@ Mantener las últimas ~10 entradas y podar las viejas.
 - **2026-10 cierre audit + a11y CompanyFormModal (opción C)** — a11y corregido (5 label htmlFor/id en CompanyFormModal 203-260). Subagentes a3d637c0 (estructura) y a419a2ec9 (enlaces) entregados: servicio 2026 vacío, rutas App.tsx OK. DB modular parcial verificado (db-*.ts + original presentes, monotipo 2957 líneas sin barrel). sql/035_company_modules.sql existe; .env removido (d3e3e7a). Pendiente: barrel, rotación clave, gate tsc, registro audit printrepo.
 2026-10-28: ProductTable.tsx defiende minStock (?? 0); sql/038_fix_minstock.sql creado; .dev.vars eliminado; POSDashboard.tsx aún con 26 errores tsc (bloqueador); rotación GEMINI/sbp_ PENDIENTE manual.
 2026-10-28: verificación tsc POST-fix POSDashboard: redeclare handleRecountConfirm eliminado; RecountItem exportado desde ProductionRecountModal; errores restantes preexistentes (KitProgressBadge/PrintJobsPage/TS6133). Rotación GEMINI/sbp_ aún manual. .dev.vars eliminado.
+2026-10-28: rediseño recibo POS completo — Receipt.test.tsx (RED) + Receipt.tsx (GREEN); PDF + WhatsApp; companyId guard; sin datos sensibles. Pendiente: integración en POSDashboard (reemplazar printReceipt línea 451) y registro rotación GEMINI/sbp_.
+2026-10-28: módulo general de recibos creado — src/modules/receipt/Receipt.tsx + index.ts + Receipt.test.tsx (TDD RED); pos/components/Receipt.tsx reexporta; POSDashboard integrado inline con receiptRef para print(); sin datos sensibles, sin dangerousSetInnerHTML, company_id obligatorio. Pendiente: rotar GEMINI/sbp_ + gate tsc.
+2026-10-28: sincronización recibo completa — ReceiptPage (useTenantStore real) + Receipt diseño mejorado + POSDashboard integrado + Sidebar/Finanzas + App /recibo. Todo conectado. Pendiente: rotar GEMINI/sbp_, gate tsc.
+2026-10-28: formulario recibo mejorado — card unificado, grid, iconos lucide, método pago, total automático, lista editable (agregar/eliminar/modificar qty), estados carga (isPrinting/isSharing), diseño receipt mejorado (header/logo/tablas/totales/footer print-only). Todo sincronizado con useTenantStore (companyId real).
+2026-10-28: diseño recibo mejorado — header/logo, tabla limpia, totales, pago visible, footer contacto, print-only. Receipt.tsx actualizado. Todo sincronizado (useTenantStore), sin datos sensibles, sin dangerous HTML.
+2026-10-28: diseño recibo corregido al modelo exacto (crema/clásico, header RAIZ, tabla CLEAR, suma letras, firma/DNI, contacto). Todo sincronizado, seguro, editable. Rotación GEMINI/sbp_ pendiente manual.
