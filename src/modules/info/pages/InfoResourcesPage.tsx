@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import { BookOpen, ExternalLink, Plus, Trash2, Flame, type LucideIcon } from 'lucide-react';
 import { useTenantStore } from '../../../store/useTenantStore';
 import { useToastStore } from '../../../store/useToastStore';
+import { Modal, FormField } from '../../../shared/components/ui/Modal';
 
 interface InfoItem {
   readonly id?: string;
@@ -89,6 +89,9 @@ export const InfoResourcesPage = () => {
     return DEFAULT_SECCIONES;
   });
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ secId: DEFAULT_SECCIONES[0].id, label: '', valor: '', link: '', nota: '' });
+
   useEffect(() => {
     if (!activeCompanyId) return;
     try {
@@ -114,90 +117,35 @@ export const InfoResourcesPage = () => {
     }
   };
 
-  const handleAddNote = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: 'Agregar Nota o Dato',
-      html: `
-        <div style="text-align: left; display: flex; flex-direction: column; gap: 16px; padding: 10px 5px; box-sizing: border-box; overflow-x: hidden;">
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Sección</label>
-            <select id="swal-seccion" class="swal2-select" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; padding: 10px; margin: 0; font-size: 14px; cursor: pointer; outline: none;">
-              ${DEFAULT_SECCIONES.map((s) => `<option value="${s.id}">${s.titulo}</option>`).join('')}
-            </select>
-          </div>
+  const handleSaveNote = () => {
+    if (!formData.label) {
+      toast('El título es obligatorio', { type: 'error' });
+      return;
+    }
 
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Título / Concepto *</label>
-            <input id="swal-label" class="swal2-input" placeholder="Ej: Temperatura remeras algodón" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; box-sizing: border-box; outline: none;">
-          </div>
+    const newItem: InfoItem = {
+      id: `custom-${Date.now()}`,
+      label: formData.label,
+      valor: formData.valor || undefined,
+      link: formData.link || undefined,
+      nota: formData.nota || undefined,
+      isCustom: true,
+    };
 
-          <div style="display: flex; gap: 12px;">
-            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-              <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Valor / Parámetro</label>
-              <input id="swal-valor" class="swal2-input" placeholder="190°C / 50 seg" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; box-sizing: border-box; outline: none;">
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-              <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Link (Opcional)</label>
-              <input id="swal-link" class="swal2-input" placeholder="https://..." style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; box-sizing: border-box; outline: none;">
-            </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-left: 4px;">Notas de experiencia / Detalle</label>
-            <textarea id="swal-nota" class="swal2-textarea" placeholder="Consejos técnicos, precauciones..." style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; width: 100%; margin: 0; padding: 12px; font-size: 14px; height: 100px; box-sizing: border-box; resize: none; outline: none;"></textarea>
-          </div>
-        </div>
-      `,
-      background: '#0f172a',
-      color: '#f8fafc',
-      showCancelButton: true,
-      confirmButtonText: 'Guardar Nota',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0284c7',
-      cancelButtonColor: '#334155',
-      customClass: {
-        popup: 'rounded-[2rem] border border-slate-800 shadow-2xl',
-        confirmButton: 'rounded-2xl px-6 py-3 font-black uppercase text-[10px] tracking-widest',
-        cancelButton: 'rounded-2xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
-      },
-      preConfirm: () => {
-        const secId = (document.getElementById('swal-seccion') as HTMLSelectElement)?.value;
-        const label = (document.getElementById('swal-label') as HTMLInputElement)?.value?.trim();
-        const valor = (document.getElementById('swal-valor') as HTMLInputElement)?.value?.trim();
-        const link = (document.getElementById('swal-link') as HTMLInputElement)?.value?.trim();
-        const nota = (document.getElementById('swal-nota') as HTMLTextAreaElement)?.value?.trim();
-
-        if (!label) {
-          Swal.showValidationMessage('El título es obligatorio.');
-          return false;
-        }
-        return { secId, label, valor, link, nota };
-      },
+    const updated = secciones.map((sec) => {
+      if (sec.id === formData.secId) {
+        return {
+          ...sec,
+          items: [newItem, ...sec.items],
+        };
+      }
+      return sec;
     });
 
-    if (formValues) {
-      const newItem: InfoItem = {
-        id: `custom-${Date.now()}`,
-        label: formValues.label,
-        valor: formValues.valor || undefined,
-        link: formValues.link || undefined,
-        nota: formValues.nota || undefined,
-        isCustom: true,
-      };
-
-      const updated = secciones.map((sec) => {
-        if (sec.id === formValues.secId) {
-          return {
-            ...sec,
-            items: [newItem, ...sec.items],
-          };
-        }
-        return sec;
-      });
-
-      saveSecciones(updated);
-      toast('Nota agregada al repositorio', { type: 'success' });
-    }
+    saveSecciones(updated);
+    toast('Nota agregada al repositorio', { type: 'success' });
+    setIsModalOpen(false);
+    setFormData({ secId: DEFAULT_SECCIONES[0].id, label: '', valor: '', link: '', nota: '' });
   };
 
   const handleDeleteItem = (secId: string, itemId?: string) => {
@@ -235,13 +183,59 @@ export const InfoResourcesPage = () => {
 
         <button
           type="button"
-          onClick={handleAddNote}
+          onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-sky-600/25 transition-transform active:scale-95 cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           Agregar Nota o Dato
         </button>
       </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Agregar Nota o Dato" onSubmit={handleSaveNote} submitLabel="Guardar Nota">
+        <FormField label="Sección">
+          <select
+            value={formData.secId}
+            onChange={(e) => setFormData(prev => ({...prev, secId: e.target.value}))}
+            className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-2xl p-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500"
+          >
+            {DEFAULT_SECCIONES.map((s) => <option key={s.id} value={s.id}>{s.titulo}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Título / Concepto">
+          <input
+            value={formData.label}
+            onChange={(e) => setFormData(prev => ({...prev, label: e.target.value}))}
+            placeholder="Ej: Temperatura remeras algodón"
+            className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-2xl p-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500"
+          />
+        </FormField>
+        <div className="flex gap-4">
+          <FormField label="Valor / Parámetro">
+            <input
+              value={formData.valor}
+              onChange={(e) => setFormData(prev => ({...prev, valor: e.target.value}))}
+              placeholder="190°C / 50 seg"
+              className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-2xl p-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500"
+            />
+          </FormField>
+          <FormField label="Link (Opcional)">
+            <input
+              value={formData.link}
+              onChange={(e) => setFormData(prev => ({...prev, link: e.target.value}))}
+              placeholder="https://..."
+              className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-2xl p-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500"
+            />
+          </FormField>
+        </div>
+        <FormField label="Notas de experiencia / Detalle">
+          <textarea
+            value={formData.nota}
+            onChange={(e) => setFormData(prev => ({...prev, nota: e.target.value}))}
+            placeholder="Consejos técnicos, precauciones..."
+            className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-2xl p-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 h-32"
+          />
+        </FormField>
+      </Modal>
 
       {/* SECCIONES */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

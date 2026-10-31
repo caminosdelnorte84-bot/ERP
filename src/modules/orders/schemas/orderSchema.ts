@@ -21,37 +21,23 @@ export const orderItemSchema = z.object({
   variations: z.array(itemVariationSchema).optional().default([]), // ✅ NUEVO: Quitamos el .min(1) para que los Servicios puedan pasar vacíos
 });
 
-// 3. Remitos / Historial de entrega
-export const deliveryLogSchema = z.object({
-  id: z.string().min(1),
-  date: z.string().datetime(), // Fuerza formato ISO
-  notes: z.string().max(1000),
-  itemsDelivered: z.array(z.object({
-    itemId: z.string().min(1),
-    variationId: z.string().min(1),
-    quantity: z.coerce.number().int().positive()
-  }))
-});
-
-// 4. El Pedido Completo
+// 3. El Pedido Completo
 export const orderSchema = z.object({
   customerName: z.string().trim().min(2, 'Nombre obligatorio').max(100),
   businessUnit: z.enum(['GENERAL', 'RAICES', 'RJ_CO', 'BITA_IT', 'ROJO_SHOWROOM', 'UNIFORMES']),
   status: z.enum(['PENDING', 'PARTIAL', 'DELIVERED', 'CANCELLED']),
   dueDate: z.string().min(1, "La fecha es requerida"),
-  
+
   // LA BÓVEDA (Plata total y Seña)
   totalAmount: z.coerce.number().optional().default(0),
   advancePayment: z.coerce.number().optional().default(0),
 
   items: z.array(orderItemSchema).min(1, 'Debe tener al menos un artículo (Prenda o Servicio)'),
-  deliveryHistory: z.array(deliveryLogSchema).optional().default([]), // Previene errores al crear pedido nuevo
 });
 
 // Tipos inferidos para TypeScript
 export type ItemVariation = z.infer<typeof itemVariationSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
-export type DeliveryLog = z.infer<typeof deliveryLogSchema>;
 export type OrderFormValues = z.infer<typeof orderSchema>;
 export interface Order extends OrderFormValues {
   id: string;

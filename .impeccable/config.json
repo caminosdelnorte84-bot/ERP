@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-10-25T20:39:02.527Z",
         "reason": "intentional design choice"
+      },
+      {
+        "rule": "text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500",
+        "value": "*",
+        "files": [
+          "src/shared/components/ui/RaicesLogo.tsx"
+        ],
+        "createdAt": "2026-10-31T15:24:54.937Z",
+        "reason": "User confirmed: intentional brand logo gradient per reference screenshot"
       }
     ]
   }

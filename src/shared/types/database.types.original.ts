@@ -1041,7 +1041,6 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           customer_phone: string | null
-          delivery_history: Json | null
           design_approved_at: string | null
           design_client_approved: boolean | null
           design_id: string | null
@@ -1071,7 +1070,6 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
-          delivery_history?: Json | null
           design_approved_at?: string | null
           design_client_approved?: boolean | null
           design_id?: string | null
@@ -1101,7 +1099,6 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
-          delivery_history?: Json | null
           design_approved_at?: string | null
           design_client_approved?: boolean | null
           design_id?: string | null
