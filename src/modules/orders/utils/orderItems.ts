@@ -47,6 +47,14 @@ const num = (value: unknown): number => {
 
 const str = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
+/** Mapeo robusto: prioriza camelCase (store) pero acepta snake_case (DB) */
+const mapQty = (valCamel: unknown, valSnake: unknown): number =>
+  num(valCamel ?? valSnake ?? 0);
+
+/** Mapeo robusto: prioriza camelCase pero acepta snake_case con variantes */
+const mapStr = (valCamel: unknown, valSnake: unknown): string =>
+  typeof valCamel === 'string' ? valCamel.trim() : (typeof valSnake === 'string' ? valSnake.trim() : '');
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
@@ -62,11 +70,13 @@ export function normalizeOrderItems(raw: unknown): NormalizedOrderItem[] {
     const rawVariations = Array.isArray(item.variations) ? item.variations : [];
     const variations: NormalizedVariation[] = rawVariations.map((rawVar, varIndex) => {
       const v = asRecord(rawVar) ?? {};
-      const size = str(v.size);
-      const color = str(v.color);
-      const sizeId = str(v.sizeId) || str(v.size_id) || null;
-      const colorId = str(v.colorId) || str(v.color_id) || null;
-      const quantityOrdered = num(v.quantityOrdered ?? v.quantity);
+      // Robusto mapeo: prioriza camelCase (store) pero acepta snake_case (DB) y variantes
+      const size = mapStr(v.size, v.size_id);
+      const color = mapStr(v.color, v.color_id);
+      const sizeId = mapStr(v.sizeId, v.size_id) || null;
+      const colorId = mapStr(v.colorId, v.color_id) || null;
+      // Ambos formats pueden venir: quantityOrdered (camel) o quantity (snake legacy)
+      const quantityOrdered = mapQty(v.quantityOrdered, v.quantity);
       return {
         id: str(v.id) || str(v.variationId) || `${itemId}:${varIndex}:${size}|${color}`,
         variantId: str(v.variantId) || null,

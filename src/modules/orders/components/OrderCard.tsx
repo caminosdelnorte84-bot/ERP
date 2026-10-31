@@ -75,7 +75,7 @@ export const OrderCard = ({ order: initialOrder }: any) => {
         <div className="p-5 flex justify-between items-center gap-4 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
           <div className="flex items-center gap-4 flex-1">
             <div className="bg-slate-100 p-3 rounded-2xl text-xl">
-              {isFullyProduced ? '✅' : '📦'}
+              {isFullyProduced ? <Check className="w-4 h-4 text-success-600" aria-hidden /> : <Package className="w-4 h-4 text-amber-600" aria-hidden />}
             </div>
             <div className="overflow-hidden">
               <h3 className="font-black text-lg text-slate-800 uppercase tracking-tight truncate">{order.customerName}</h3>

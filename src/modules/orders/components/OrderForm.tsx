@@ -264,7 +264,7 @@ export const OrderForm = memo(
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 h-full overflow-y-auto animate-in slide-in-from-right duration-300 shadow-2xl flex flex-col">
             <header className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-20">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">
-                {orderToEdit ? "✏️ EDITAR PEDIDO" : "🆕 NUEVA HOJA DE RUTA"}
+                {orderToEdit ? <Edit className="w-4 h-4 text-slate-600" aria-hidden /> EDITAR PEDIDO : <Plus className="w-4 h-4 text-slate-600" aria-hidden /> NUEVA HOJA DE RUTA}
               </h2>
               <button
                 type="button"

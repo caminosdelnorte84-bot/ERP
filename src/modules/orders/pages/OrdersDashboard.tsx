@@ -8,9 +8,11 @@ import {
   type OrderNote,
   type OrderPayment,
 } from '../store/useOrderStore';
+import { useToastStore } from '../../../shared/components/notifications/useNotifications';
 import { useCrmStore } from '../../crm/store/useCrmStore';
 import { itemsTotals, normalizeOrderItems } from '../utils/orderItems';
-import { ARS } from '../../../shared/utils/format';
+import { ARS, formatDate, formatDateTime } from '../../../shared/utils/format';
+import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { cn } from '../../../shared/utils/cn';
 import { ErrorBoundary } from '../../../shared/components/ui/ErrorBoundary';
 import { OrderForm } from '../components/OrderForm';
@@ -18,6 +20,29 @@ import { RemitoModal } from '../components/RemitoModal';
 import { OrderLabel } from '../../orders/components/OrderLabel/OrderLabel';
 import { useReactToPrint } from 'react-to-print';
 import Swal from 'sweetalert2';
+
+// ✅ Theme centralizado de SwAlert2 - unifica patrones consistentes
+const SWAL = {
+  // Opciones base consistentes
+  confirm: { buttonColor: '#10b981', showConfirmButton: true, timer: 1500 },
+  error: { icon: 'error', showConfirmButton: false, timer: 3000 },
+  success: { icon: 'success', showConfirmButton: false, timer: 1500 },
+  warning: { icon: 'warning', showCancelButton: true },
+  question: { icon: 'question', showCancelButton: true },
+
+  // Helpers de acción
+  confirmAction: (title: string, text: string) =>
+    Swal.fire({ title, text, ...SWAL.confirm }),
+  warnAction: (title: string, text: string) =>
+    Swal.fire({ title, text, ...SWAL.warning }),
+  errorAction: (title: string) => Swal.fire({ title, ...SWAL.error }),
+  successAction: (title: string) => Swal.fire({ title, ...SWAL.success }),
+  askCancellation: (title: string, text: string) =>
+    Swal.fire({ title, text, ...SWAL.question }),
+};
+
+// Re-export Swal para mantener compatibilidad
+export default Swal;
 import {
   Search, Package, Calendar, Clock, CheckCircle, XCircle,
   AlertTriangle, Plus, ArrowUpDown,
@@ -84,16 +109,7 @@ function exportToCSV(orders: Order[]) {
   a.download = `pedidos_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-function formatDate(d: string | null | undefined) {
-  if (!d) return 'S/F';
-  return new Date(d).toLocaleDateString('es-AR');
-}
-
-function formatDateTime(d: string) {
-  return new Date(d).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
+// formatDate/formatDateTime now imported from '../../../shared/utils/format'
 
 // ========== MAIN COMPONENT ==========
 const OrdersContent = memo(() => {
@@ -126,7 +142,8 @@ type LabelOrder = ComponentProps<typeof OrderLabel>['order'];
 
   const handlePrintLabelAction = useReactToPrint({ contentRef: labelRef });
   const triggerLabelPrint = useCallback((order: Order) => {
-// OrderLabel espera la forma camelCase (shared/types/order.types): mapear
+// Nota: OrderLabel utiliza camelCase desde el store, el normalizador
+// ensure mapping snake→camel en orderItems.ts. Evitar casteo directo.
     // desde el store (snake_case) vía normalizador, nunca castear directo.
     const labelData: LabelOrder = {
       id: order.id,
@@ -140,64 +157,61 @@ type LabelOrder = ComponentProps<typeof OrderLabel>['order'];
   }, [handlePrintLabelAction]);
 
   const handleDeliverVariation = useCallback(async (orderId: string, itemId: string, variationId: string, pendingQty: number, desc: string) => {
-    const { value: qty } = await Swal.fire({
-      title: `Entregar ${desc}`,
-      input: 'number',
-      inputLabel: `Pendiente: ${pendingQty}`,
-      inputAttributes: { min: '1', max: pendingQty.toString() },
-      showCancelButton: true,
-      confirmButtonColor: '#10b981',
-    });
+    const result = await SWAL.confirmAction('Cantidad', 'Ingresá la cantidad de prendas');
+    if (!result.isConfirmed) return;
+    const parsed = Number(result.value);
+    if (!parsed || parsed <= 0 || parsed > pendingQty) {
+      useToastStore.getState().toast('Ingresá un cantidad válida', { type: 'error' });
+      return;
+    }
     if (!qty) return;
     try {
-await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(qty) }]);
+      useToastStore.getState().toast(`Registrando entrega...`, { type: 'info' });
+      await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(qty) }]);
       await fetchOrders();
-      Swal.fire({ title: 'Entrega Registrada', icon: 'success', timer: 1500, showConfirmButton: false });
+      useToastStore.getState().toast(`Entrega registrada: ${desc}`, { type: 'success' });
     } catch {
-      Swal.fire({ title: 'Error', text: 'No se pudo registrar la entrega', icon: 'error' });
+      useToastStore.getState().toast('No se pudo registrar la entrega', { type: 'error' });
     }
-}, [registerPartialDelivery, fetchOrders]);
+  }, [registerPartialDelivery, fetchOrders]);
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: Order['status']) => {
-    const confirm = await Swal.fire({
-      title: 'Cambiar estado',
-      text: `¿Cambiar a ${STATUS_CONFIG[newStatus]?.label || newStatus}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#2563eb',
-    });
+    const confirm = await SWAL.askCancellation(
+      `Cambiar a ${STATUS_CONFIG[newStatus]?.label || newStatus}`,
+      '¿Estás seguro?'
+    );
     if (!confirm.isConfirmed) return;
     try {
       await updateOrder(orderId, { status: newStatus });
       await addActivityLog(orderId, 'STATUS_CHANGE', `Estado cambiado a ${STATUS_CONFIG[newStatus]?.label}`);
       fetchOrders();
-      Swal.fire({ title: 'Estado actualizado', icon: 'success', timer: 1500, showConfirmButton: false });
+      SWAL.successAction('Estado actualizado');
     } catch {
-      Swal.fire({ title: 'Error', icon: 'error' });
+      SWAL.errorAction('Error');
     }
   }, [updateOrder, addActivityLog, fetchOrders]);
 
   const handleCancelOrder = useCallback(async (orderId: string) => {
-    const confirm = await Swal.fire({ title: '¿Cancelar pedido?', text: 'Esta acción no se puede deshacer', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
+    const confirm = await SWAL.warnAction('¿Cancelar pedido?', 'Esta acción no se puede deshacer');
     if (!confirm.isConfirmed) return;
     try {
       await updateOrder(orderId, { status: 'CANCELLED' });
       await addActivityLog(orderId, 'CANCELLED', 'Pedido cancelado');
       fetchOrders();
     } catch {
-      Swal.fire({ title: 'Error', icon: 'error' });
+      SWAL.errorAction('Error');
     }
   }, [updateOrder, addActivityLog, fetchOrders]);
 
   const handleAddNote = useCallback(async (orderId: string) => {
-    const { value: text } = await Swal.fire({ title: 'Agregar nota', input: 'textarea', inputPlaceholder: 'Escribí tu nota...', showCancelButton: true, confirmButtonColor: '#2563eb' });
+    const { value: text } = await SWAL.confirmAction('Agregar nota', 'Escribí tu nota...');
     if (!text) return;
     addNote(orderId, text);
     addActivityLog(orderId, 'NOTE', 'Nota agregada');
   }, [addNote, addActivityLog]);
 
   const handleAddPayment = useCallback(async (orderId: string) => {
-    const { value: formValues } = await Swal.fire({
+    const result = await Swal.fire({
       title: 'Registrar pago',
       html: `
         <input id="swal-amount" type="number" placeholder="Monto" class="swal2-input" style="width:100%">
@@ -218,24 +232,25 @@ await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(
         return { amount, method };
       },
     });
-    if (!formValues) return;
-    addPayment(orderId, formValues.amount, formValues.method);
-    addActivityLog(orderId, 'PAYMENT', `Pago de ${ARS.format(formValues.amount)} vía ${formValues.method}`);
-    Swal.fire({ title: 'Pago registrado', icon: 'success', timer: 1500, showConfirmButton: false });
+    if (!result.isConfirmed) return;
+    const { amount, method } = result.value as { amount: number; method: string };
+    addPayment(orderId, amount, method);
+    addActivityLog(orderId, 'PAYMENT', `Pago de ${ARS.format(amount)} vía ${method}`);
+    SWAL.successAction('Pago registrado');
   }, [addPayment, addActivityLog]);
 
   const handleDuplicate = useCallback((orderId: string) => {
     duplicateOrder(orderId);
-    Swal.fire({ title: 'Pedido duplicado', icon: 'success', timer: 1500, showConfirmButton: false });
+    SWAL.successAction('Pedido duplicado');
   }, [duplicateOrder]);
 
   const handleSaveTemplate = useCallback((orderId: string) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
-    Swal.fire({ title: 'Nombre de plantilla', input: 'text', inputValue: `Plantilla - ${order.customer_name}`, showCancelButton: true, confirmButtonColor: '#2563eb' }).then((result) => {
+    SWAL.confirmAction('Nombre de plantilla', `Plantilla - ${order.customer_name}`).then((result) => {
       if (result.isConfirmed && result.value) {
         saveTemplate(result.value, order);
-        Swal.fire({ title: 'Plantilla guardada', icon: 'success', timer: 1500, showConfirmButton: false });
+        SWAL.successAction('Plantilla guardada');
       }
     });
   }, [orders, saveTemplate]);
@@ -285,7 +300,11 @@ await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(
 
   const selectedCount = selectedOrders.size;
 
-  return (
+  {isLoading ? (
+              <div className="h-[400px] w-full rounded-lg animate-bounce bg-white dark:bg-slate-800 border border-slate-200/50 flex items-center justify-center">
+                <Skeleton className="w-32 h-16" />
+              </div>
+            ) : (
     <div className="space-y-4 lg:space-y-5 animate-in fade-in duration-500">
 
       {/* Header */}
@@ -297,7 +316,7 @@ await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(
             </div>
             Hoja de Ruta
           </h1>
-          <p className="text-xs text-slate-400 font-medium mt-1 ml-13">Gestión de Producción y Entregas</p>
+          <p className="text-xs text-slate-400 font-medium mt-1">Gestión de Producción y Entregas</p>
         </div>
         <div className="flex items-center gap-2">
 <button onClick={() => exportToCSV(filteredOrders)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand rounded-xl text-[10px] font-black uppercase transition-colors transition-transform active:scale-95">
@@ -346,8 +365,8 @@ await registerPartialDelivery(orderId, [{ itemId, variationId, quantity: Number(
         {selectedCount > 0 && (
           <div className="flex items-center gap-2 bg-brand/10 border border-brand/20 px-4 py-2 rounded-xl animate-in fade-in">
             <span className="text-[10px] font-black text-brand">{selectedCount} seleccionados</span>
-            <button onClick={() => { void Swal.fire({ title: '¿Completar pedidos?', text: `${selectedCount} pedidos pasarán a ENTREGADO`, icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981' }).then((r) => { if (r.isConfirmed) void bulkChangeStatus('DELIVERED'); }); }} className="px-3 py-1 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Completar</button>
-            <button onClick={() => { void Swal.fire({ title: '¿Cancelar pedidos?', text: `${selectedCount} pedidos quedarán CANCELADOS. Esta acción no se puede deshacer`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then((r) => { if (r.isConfirmed) void bulkChangeStatus('CANCELLED'); }); }} className="px-3 py-1 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase">Cancelar</button>
+            <button onClick={() => { void SWAL.confirmAction('Completar pedidos', `${selectedCount} pedidos pasarán a ENTREGADO`).then((r) => { if (r.isConfirmed) void bulkChangeStatus('DELIVERED'); }); }} className="px-3 py-1 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Completar</button>
+            <button onClick={() => { void SWAL.warnAction('Cancelar pedidos', `${selectedCount} pedidos quedarán CANCELADOS. Esta acción no se puede deshacer`).then((r) => { if (r.isConfirmed) void bulkChangeStatus('CANCELLED'); }); }} className="px-3 py-1 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase">Cancelar</button>
 <button onClick={clearSelection} className="p-1 text-slate-400 hover:text-slate-600" aria-label="Limpiar selección"><X className="w-4 h-4" /></button>
           </div>
         )}

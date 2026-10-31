@@ -57,7 +57,6 @@ const STATUS_MAP: Record<string, BadgeVariant> = {
   delivered: 'success',
   paid: 'success',
   cancelled: 'danger',
-  cancelled店内: 'danger',
   failed: 'danger',
   overdue: 'danger',
   draft: 'default',

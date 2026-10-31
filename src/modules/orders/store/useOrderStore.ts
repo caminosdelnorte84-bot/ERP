@@ -66,7 +66,7 @@ export interface OrderTemplate {
   id: string;
   name: string;
   customer_name: string;
-  business_unit: string;
+  businessUnit: string;
   items: OrderItem[];
   total_amount: number;
   advance_payment: number;
@@ -81,7 +81,7 @@ export interface Order {
   advance_payment: number;
   status: 'PENDING' | 'PARTIAL' | 'DELIVERED' | 'CANCELLED';
   due_date: string;
-  business_unit: string;
+  businessUnit: string;
   items: OrderItem[];
   created_at?: string;
   priority?: OrderPriority;
@@ -104,9 +104,11 @@ interface OrderState {
   orders: Order[];
   templates: OrderTemplate[];
   isLoading: boolean;
+  isLoadingTemplates: boolean;
   viewMode: 'list' | 'kanban' | 'calendar';
   selectedOrders: Set<string>;
-fetchOrders: () => Promise<void>;
+  fetchOrders: () => Promise<void>;
+  fetchTemplates: () => Promise<void>;
   registerPartialDelivery: (orderId: string, deliveries: DeliveryTarget[]) => Promise<void>;
   createOrder: (orderData: Omit<Order, 'id'>) => Promise<void>;
   updateOrder: (orderId: string, updates: Partial<Order>) => Promise<void>;
@@ -118,26 +120,44 @@ fetchOrders: () => Promise<void>;
   setViewMode: (mode: 'list' | 'kanban' | 'calendar') => void;
   toggleOrderSelection: (orderId: string) => void;
   selectAllOrders: (orderIds: string[]) => void;
-clearSelection: () => void;
+  clearSelection: () => void;
   bulkChangeStatus: (status: Order['status']) => Promise<void>;
   duplicateOrder: (orderId: string) => void;
-  saveTemplate: (name: string, order: Order) => void;
-  deleteTemplate: (id: string) => void;
+  saveTemplate: (name: string, order: Order) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
   addPhoto: (orderId: string, url: string, name: string) => Promise<void>;
 }
 
 const META_COLUMNS = 'priority, production_stage, activity_log, notes, payments, photos, customer_phone, customer_email, internal_notes, design_id, design_product, design_verdict, design_client_approved, design_approved_at';
 
-function loadTemplates(): OrderTemplate[] {
+async function fetchTemplatesFromDB(): Promise<OrderTemplate[]> {
+  const companyId = useTenantStore.getState().activeCompanyId;
+  if (!companyId) return [];
+  const { data, error } = await supabase
+    .from('order_templates')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('Error fetching templates:', error.message);
+    return [];
+  }
+  return (data || []).map((t: any) => ({
+    ...t,
+    businessUnit: t.business_unit || t.businessUnit || 'GENERAL',
+  })) as OrderTemplate[];
+}
+
+function loadTemplatesFallback(): OrderTemplate[] {
   try {
-    return JSON.parse(localStorage.getItem('epr_order_templates') || '[]');
+    const raw = JSON.parse(localStorage.getItem('epr_order_templates') || '[]');
+    return raw.map((t: any) => ({
+      ...t,
+      businessUnit: t.businessUnit || t.business_unit || 'GENERAL',
+    }));
   } catch {
     return [];
   }
-}
-
-function saveTemplates(templates: OrderTemplate[]) {
-  localStorage.setItem('epr_order_templates', JSON.stringify(templates));
 }
 
 const Swal = {
@@ -160,9 +180,12 @@ async function persistMeta(orderId: string, patch: Record<string, unknown>) {
 function isMissingFunctionError(err: { code?: string; message?: string }): boolean {
   return err.code === 'PGRST202' || err.code === '404' || err.code === '42883' || /could not find the function/i.test(err.message || '');
 }
-export const useOrderStore = create<OrderState>((set, get) => ({  orders: [],
-  templates: loadTemplates(),
+
+export const useOrderStore = create<OrderState>((set, get) => ({
+  orders: [],
+  templates: loadTemplatesFallback(),
   isLoading: false,
+  isLoadingTemplates: false,
   viewMode: 'list',
   selectedOrders: new Set<string>(),
 
@@ -179,10 +202,24 @@ export const useOrderStore = create<OrderState>((set, get) => ({  orders: [],
       .order('created_at', { ascending: false });
 
     if (!error) {
-      set({ orders: (data || []) as unknown as Order[], isLoading: false });
+      const mapped = (data || []).map((o: any) => ({
+        ...o,
+        businessUnit: o.business_unit || 'GENERAL',
+      }));
+      set({ orders: mapped as unknown as Order[], isLoading: false });
     } else {
       console.error("Error fetching 'orders':", error.message);
       set({ isLoading: false });
+    }
+  },
+
+  fetchTemplates: async () => {
+    const templates = await fetchTemplatesFromDB();
+    if (templates.length > 0) {
+      set({ templates, isLoadingTemplates: false });
+    } else {
+      const localTemplates = loadTemplatesFallback();
+      set({ templates: localTemplates, isLoadingTemplates: false });
     }
   },
 
@@ -190,7 +227,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({  orders: [],
     const companyId = useTenantStore.getState().activeCompanyId;
     if (!companyId) throw new Error("No hay una empresa activa seleccionada para crear el pedido.");
 
-    const payloadWithTenant = { ...orderData, company_id: companyId };
+    const { businessUnit, ...rest } = orderData;
+    const payloadWithTenant = { ...rest, business_unit: businessUnit, company_id: companyId };
 
     const { error: rpcError } = await supabase.rpc('create_order_atomic', {
       order_payload: payloadWithTenant,
@@ -213,6 +251,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({  orders: [],
     if (updates.due_date !== undefined) dbUpdates.due_date = updates.due_date;
     if (updates.customer_name !== undefined) dbUpdates.customer_name = updates.customer_name;
     if (updates.items !== undefined) dbUpdates.items = updates.items;
+    if (updates.businessUnit !== undefined) dbUpdates.business_unit = updates.businessUnit;
     if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
     if (updates.production_stage !== undefined) dbUpdates.production_stage = updates.production_stage;
     if (updates.activity_log !== undefined) dbUpdates.activity_log = updates.activity_log;
@@ -235,7 +274,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({  orders: [],
     }));
   },
 
-registerPartialDelivery: async (orderId, deliveries) => {
+  registerPartialDelivery: async (orderId, deliveries) => {
     const current = get().orders.find((o) => o.id === orderId);
     if (!current) throw new Error('Pedido no encontrado');
     if (current.status === 'CANCELLED') throw new Error('El pedido está cancelado');
@@ -249,8 +288,6 @@ registerPartialDelivery: async (orderId, deliveries) => {
       user: 'Usuario',
     };
 
-    // Camino atómico preferido: RPC que persiste quantityDelivered + status + log
-    // en una sola transacción (sql/031_register_delivery_v2.sql).
     const { error: rpcError } = await supabase.rpc('register_delivery_v2', {
       p_order_id: orderId,
       p_deliveries: deliveries,
@@ -264,8 +301,6 @@ registerPartialDelivery: async (orderId, deliveries) => {
       throw new Error(`Error registrando entrega: ${rpcError.message}`);
     }
 
-    // Fallback mientras no se aplique la migración: lectura fresca + UN solo
-    // UPDATE con items/status/activity_log calculados client-side.
     const { data, error: fetchError } = await supabase
       .from('orders')
       .select('items, status, activity_log')
@@ -409,7 +444,7 @@ registerPartialDelivery: async (orderId, deliveries) => {
 
   clearSelection: () => set({ selectedOrders: new Set() }),
 
-bulkChangeStatus: async (status) => {
+  bulkChangeStatus: async (status) => {
     const { selectedOrders } = get();
     set({ selectedOrders: new Set() });
     for (const id of selectedOrders) {
@@ -436,25 +471,80 @@ bulkChangeStatus: async (status) => {
     set((state) => ({ orders: [duplicate, ...state.orders] }));
   },
 
-  saveTemplate: (name, order) => {
+  saveTemplate: async (name, order) => {
+    const companyId = useTenantStore.getState().activeCompanyId;
+    const templateData = {
+      name,
+      customer_name: order.customer_name,
+      business_unit: order.businessUnit,
+      items: order.items,
+      total_amount: order.total_amount,
+      advance_payment: order.advance_payment,
+      company_id: companyId,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('order_templates')
+        .insert([templateData])
+        .select()
+        .single();
+
+      if (!error && data) {
+        const template: OrderTemplate = {
+          id: data.id,
+          name,
+          customer_name: order.customer_name,
+          businessUnit: data.business_unit || order.businessUnit,
+          items: order.items,
+          total_amount: order.total_amount,
+          advance_payment: order.advance_payment,
+          created_at: data.created_at,
+        };
+        const templates = [template, ...get().templates];
+        set({ templates });
+        return;
+      }
+    } catch (err) {
+      console.error('Error saving template to DB:', err);
+    }
+
     const template: OrderTemplate = {
       id: crypto.randomUUID(),
       name,
       customer_name: order.customer_name,
-      business_unit: order.business_unit,
+      businessUnit: order.businessUnit,
       items: order.items,
       total_amount: order.total_amount,
       advance_payment: order.advance_payment,
       created_at: new Date().toISOString(),
     };
-    const templates = [...get().templates, template];
-    saveTemplates(templates);
+    const templates = [template, ...get().templates];
+    localStorage.setItem('epr_order_templates', JSON.stringify(templates));
     set({ templates });
   },
 
-  deleteTemplate: (id) => {
+  deleteTemplate: async (id) => {
+    const companyId = useTenantStore.getState().activeCompanyId;
+
+    try {
+      const { error } = await supabase
+        .from('order_templates')
+        .delete()
+        .eq('id', id)
+        .eq('company_id', companyId);
+
+      if (!error) {
+        const templates = get().templates.filter((t) => t.id !== id);
+        set({ templates });
+        return;
+      }
+    } catch (err) {
+      console.error('Error deleting template from DB:', err);
+    }
+
     const templates = get().templates.filter((t) => t.id !== id);
-    saveTemplates(templates);
+    localStorage.setItem('epr_order_templates', JSON.stringify(templates));
     set({ templates });
   },
 

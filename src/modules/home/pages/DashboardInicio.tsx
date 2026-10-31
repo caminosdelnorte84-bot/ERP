@@ -146,7 +146,7 @@ const DashboardContent = memo(() => {
 
       {/* Hero Section - Gradient Welcome */}
       <header className="relative rounded-[2.5rem] overflow-hidden shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900" />
+        <div className="absolute inset-0 bg-linear-to-br from-slate-900 via-slate-800 to-blue-900" />
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
@@ -163,7 +163,7 @@ const DashboardContent = memo(() => {
               textClassName="text-4xl lg:text-6xl font-black tracking-tighter text-white italic"
             />
           </div>
-          <span className="block w-20 h-1 rounded-full bg-gradient-to-r from-blue-400 to-cyan-300 mb-4" aria-hidden="true" />
+          <span className="block w-20 h-1 rounded-full bg-linear-to-r from-blue-400 to-cyan-300 mb-4" aria-hidden="true" />
           <p className="text-slate-200 font-black text-sm uppercase tracking-widest max-w-md">
             Panel de Control Operativo
           </p>
@@ -175,7 +175,7 @@ const DashboardContent = memo(() => {
 
       {/* Producción en curso */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-rose-500 to-fuchsia-500" aria-hidden="true" />
+        <span className="w-1.5 h-5 rounded-full bg-linear-to-b from-rose-500 to-fuchsia-500" aria-hidden="true" />
         <h2 className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-[0.25em]">
           Producción en curso
         </h2>
@@ -183,7 +183,7 @@ const DashboardContent = memo(() => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <Link
           to="/produccion-3d"
-          className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-rose-500 to-rose-600 p-6 shadow-lg shadow-rose-500/30 transition-transform hover:scale-[1.01]"
+          className="group relative overflow-hidden rounded-[2rem] bg-linear-to-br from-rose-500 to-rose-600 p-6 shadow-lg shadow-rose-500/30 transition-transform hover:scale-[1.01]"
         >
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
           <div className="flex items-center gap-3 mb-3">
@@ -198,7 +198,7 @@ const DashboardContent = memo(() => {
 
         <Link
           to="/produccion-sublimacion"
-          className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 p-6 shadow-lg shadow-fuchsia-500/30 transition-transform hover:scale-[1.01]"
+          className="group relative overflow-hidden rounded-4xl bg-linear-to-br from-fuchsia-500 to-fuchsia-600 p-6 shadow-lg shadow-fuchsia-500/30 transition-transform hover:scale-[1.01]"
         >
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
           <div className="flex items-center gap-3 mb-3">
@@ -211,7 +211,7 @@ const DashboardContent = memo(() => {
           <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest mt-1">Trabajos en curso</p>
         </Link>
 
-        <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-6 shadow-sm flex flex-col justify-center">
+        <div className="relative overflow-hidden rounded-4xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-6 shadow-sm flex flex-col justify-center">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Producción total activa</p>
           <p className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">
             {isLoadingCounts ? '—' : prod3dActivos + prodSubliActivos}
@@ -244,10 +244,10 @@ const DashboardContent = memo(() => {
                     <Link
                       key={m.path}
                       to={m.path}
-                      className="group relative flex items-center gap-3 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 overflow-hidden hover:border-slate-300 dark:hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg transition-colors transition-shadow"
+                      className="group relative flex items-center gap-3 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 overflow-hidden hover:border-slate-300 dark:hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg transition-colors"
                     >
-                      <span className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${m.color}`} aria-hidden="true" />
-                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${m.color} text-white flex items-center justify-center shadow-lg shrink-0 group-hover:scale-110 transition-transform`}>
+                      <span className={`absolute inset-y-0 left-0 w-1 bg-linear-to-b ${m.color}`} aria-hidden="true" />
+                      <div className={`w-11 h-11 rounded-xl bg-linear-to-br ${m.color} text-white flex items-center justify-center shadow-lg shrink-0 group-hover:scale-110 transition-transform`}>
                         <m.icon className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">

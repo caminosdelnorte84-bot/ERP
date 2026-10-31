@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import Barcode from 'react-barcode';
 import type { Order } from '../../../../shared/types/order.types';
 
 interface OrderLabelProps {
@@ -74,13 +75,17 @@ export const OrderLabel = memo(({ order, printTimestamp = new Date() }: OrderLab
       <div className="flex justify-between items-end pt-4 mt-auto border-t-2 border-slate-900">
         <p className="text-[10px] font-black tracking-widest">{formattedDate}</p>
 
-        {/* TODO: Reemplazar por componente <Barcode value={order.id} /> en el futuro */}
-        <div 
-          className="text-3xl tracking-[0.2em] select-none opacity-70"
-          aria-label="Código de barras del remito"
-        >
-          ||||| || |||| ||
-        </div>
+        <Barcode
+          value={order.id}
+          format="CODE128"
+          width={1.5}
+          height={40}
+          displayValue={false}
+          background="#ffffff"
+          lineColor="#000000"
+          margin={0}
+          className="opacity-90"
+        />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useOrderStore } from '../../orders/store/useOrderStore';
 import { useCatalogStore, type Product } from '../../../store/useCatalogStore';
 import { useTenantStore } from '../../../store/useTenantStore';
 import { generateQuotePDF } from '../../../utils/printQuotePDF';
@@ -13,7 +14,7 @@ const Swal = {
 };
 import {
   FileText, Plus, Search, Download, Copy, Trash2,
-  Send, CheckCircle, XCircle,
+  Send, CheckCircle, XCircle, ShoppingBag,
   Calendar, MessageSquare,
 } from 'lucide-react';
 
@@ -212,6 +213,48 @@ export function QuoteDashboard() {
       setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: newStatus } : q));
     } catch (err) {
       console.error('Error updating status:', err);
+    }
+  };
+
+  const { createOrder } = useOrderStore();
+  const handleConvertToOrder = async (quote: QuoteRecord) => {
+    try {
+      const { data: items, error: itemsError } = await supabase
+        .from('quote_items')
+        .select('product_id, description, quantity, unit_price')
+        .eq('quote_id', quote.id);
+      if (itemsError) throw itemsError;
+
+      const mappedItems = (items || []).map((item: any, idx: number) => ({
+        id: `template-item-${idx}`,
+        type: 'PRODUCT' as const,
+        productName: item.description || 'Producto',
+        variations: [{
+          id: `var-${idx}-0`,
+          size: '',
+          color: '',
+          quantityOrdered: Number(item.quantity) || 0,
+          quantityDelivered: 0,
+        }],
+      }));
+
+      await createOrder({
+        customer_name: quote.customers?.name || 'Cliente sin nombre',
+        business_unit: 'GENERAL',
+        status: 'PENDING',
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        total_amount: quote.total_amount || quote.total || 0,
+        advance_payment: 0,
+        items: mappedItems,
+      });
+
+      // Marcar cotización como convertida
+      await supabase.from('quotes').update({ status: 'CONVERTIDO' }).eq('id', quote.id);
+      await fetchData();
+      void Swal.fire({ title: 'Pedido creado', icon: 'success', timer: 1500, showConfirmButton: false });
+    } catch (err) {
+      console.error('Error convirtiendo cotización:', err);
+      void Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo convertir a pedido' });
     }
   };
 
@@ -489,6 +532,12 @@ export function QuoteDashboard() {
                               <XCircle className="w-3 h-3" />
                             </button>
                           </>
+                        )}
+                        {q.status === 'APROBADO' && (
+                          <button onClick={() => handleConvertToOrder(q)} title="Convertir a Pedido"
+                            className="p-1.5 bg-brand hover:bg-brand-700 hover:text-white text-brand rounded-lg transition-colors">
+                            <ShoppingBag className="w-3 h-3" />
+                          </button>
                         )}
                         <button onClick={() => handleDelete(q.id)} title="Eliminar"
                           className="p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-600 hover:text-white text-red-600 dark:text-red-400 rounded-lg transition-colors">
